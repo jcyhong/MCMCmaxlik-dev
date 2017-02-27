@@ -1,0 +1,26 @@
+Package: MCMCmaxlik
+Title: Maximum likelihood estimation for random effects model
+Version: 0.0.0.9000
+Author: Perry de Valpine <pdevalpine@berkeley.edu>, 
+  Johnny Hong <jcyhong@berkeley.edu>, 
+  Sara Stoudt <sstoudt@berkeley.edu>
+Maintainer: Johnny Hong <jcyhong@berkeley.edu>, 
+  Sara Stoudt <sstoudt@berkeley.edu>
+Description: Maximum likelihood estimation of the top-level parameters 
+  in a random effects model using gradient ascent. The gradient direction 
+  is approximated using full conditional samples of latent variables and 
+  finite element approximation.
+Depends: 
+    R (>= 3.3.1),
+    nimble,
+    coda
+Imports:
+    nimble,
+    hdrcde,
+    stats,
+    utils,
+    coda
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 5.0.1.9000
