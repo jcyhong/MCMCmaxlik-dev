@@ -57,6 +57,7 @@ checkOutOfRange <- function(thetaNew, boundary) {
 
 gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
                        postMode = F, 
+                       burninFrac = 0.5,
                        stepsize = 1, maxIter = 100, numMCMCSamples = 10000, 
                        delta = 1e-04, tol = 1e-04) {
   thetaCur <- paramInit
@@ -68,7 +69,7 @@ gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
   while (iter < maxIter & thr > tol) {
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
-    compiledFuns$computeGrad$run(delta, postMode)
+    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
     gradCurr <- compiledFuns$computeGrad$grad
     eta <- stepsize
     thetaNew <- paramMatrix[iter, ] + eta * gradCurr
@@ -100,7 +101,7 @@ gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
 }
 
 NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
-                  postMode = F, 
+                  postMode = F, burninFrac = 0.5,
                   stepsize = 1, maxIter = 100, numMCMCSamples = 10000, 
                   delta = 1e-04, tol = 1e-04) {
   
@@ -122,7 +123,7 @@ NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
   while (iter < maxIter & thr > tol) {
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
-    compiledFuns$computeGrad$run(delta, postMode)
+    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
     ## add warm up
     warmUp <- unname(as.matrix(compiledFuns$MCMC$mvSamples)[numMCMCSamples,])
     compiledFuns$setLatent$run(warmUp)
@@ -149,8 +150,11 @@ NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
 
 
 adagradMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
-                       eta=0.01, postMode = F, maxIter = 100, numMCMCSamples = 10000, 
-                       delta = 1e-04, tol = 1e-04, eps = 1e-2) {
+                       postMode = F, maxIter = 100,
+                       burninFrac = 0.5,
+                       numMCMCSamples = 10000, 
+                       eta=0.01, delta = 1e-04, eps = 1e-2,
+                       tol = 1e-04) {
   thetaCur <- paramInit
   thetaNew <- paramInit
   iter <- 1
@@ -161,7 +165,7 @@ adagradMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
   while (iter < maxIter & thr > tol) {
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
-    compiledFuns$computeGrad$run(delta, postMode)
+    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
     gradCurr <- compiledFuns$computeGrad$grad
     accumGrad <- accumGrad + (gradCurr ^ 2)
     RMSGrad <- sqrt(accumGrad + eps)
@@ -197,19 +201,25 @@ adagradMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
 
 adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
                         postMode = F, maxIter = 100, numMCMCSamples = 10000, 
+                        trackEffSizeGrad = F,
+                        burninFrac = 0.5,
                         delta = 1e-04, tol = 1e-04, eps = 1e-2, rho=0.9) {
   thetaCur <- paramInit
   thetaNew <- paramInit
   iter <- 1
   thr <- Inf
-  paramMatrix <- matrix(nrow = maxIter, ncol = length(paramInit))
+  paramMatrix <- matrix(nrow = maxIter + 1, ncol = length(paramInit))
+  if (trackEffSizeGrad) {
+    latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
+    effSizesGrad <- matrix(nrow = maxIter, ncol = length(latentNodes))
+  }
   accumGrad <- numeric(length(paramInit))
   accumUpdate <- numeric(length(paramInit))
   paramMatrix[1, ] <- paramInit
-  while (iter < maxIter & thr > tol) {
+  while (iter <= maxIter & thr > tol) {
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
-    compiledFuns$computeGrad$run(delta, postMode)
+    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
     gradCurr <- compiledFuns$computeGrad$grad
     accumGrad <- rho * accumGrad + (1 - rho) * (gradCurr ^ 2)
     RMSGrad <- sqrt(accumGrad + eps)
@@ -238,29 +248,55 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
     thr <- sum((gradCurr)^2)
     thetaCur <- thetaNew
     compiledFuns$setLatent$run(tail(as.matrix(compiledFuns$MCMC$mvSamples), 1))
+    
+    df <- data.frame(t(thetaCur))
+    names(df) <- paramNodes
+    cat(paste0("Iteration Number: ", iter, ".\n",
+               "Parameter Estimates:\n"))
+    print(df, row.names = FALSE)
+    if (trackEffSizeGrad) {
+      samplesGrad <- as.matrix(compiledFuns$MCMC$mvSamples)
+      samplesGrad <- samplesGrad[(ceiling(burninFrac * numMCMCSamples) + 1):numMCMCSamples,]
+      
+      effSizesGrad[iter,] <- round(effectiveSize(samplesGrad), 1)
+      cat(paste0("Effective Sample Size for gradient (raw, min): ", 
+                 min(effSizesGrad[iter, ]), 
+                 "\n")) 
+    }
     iter <- iter + 1
-    print(iter)
   }
-  return(list(param = paramMatrix, iter = iter))
+  if (trackEffSizeGrad) {
+    results <- list(param = paramMatrix, iter = iter, effSizesGrad = effSizesGrad)
+  } else {
+    results <- list(param = paramMatrix, iter = iter)
+  }
+  return(results)
 }
 
 adamMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
-                    postMode = F, maxIter = 100, numMCMCSamples = 10000, 
+                    postMode = F, trackEffSizeGrad = F,
+                    maxIter = 100, numMCMCSamples = 10000, 
                     delta = 1e-04, tol = 1e-04, eps = 1e-8,
+                    burninFrac = 0.5,
                     stepsize=0.001,
                     beta1=0.9, beta2=0.999) {
   thetaCur <- paramInit
   thetaNew <- paramInit
   iter <- 1
   thr <- Inf
-  paramMatrix <- matrix(nrow = maxIter, ncol = length(paramInit))
+  paramMatrix <- matrix(nrow = maxIter + 1, ncol = length(paramInit))
+  if (trackEffSizeGrad) {
+    latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
+    effSizesGrad <- matrix(nrow = maxIter, ncol = length(latentNodes))
+  }
   accumFirst <- numeric(length(paramInit))
   accumSecond <- numeric(length(paramInit))
   paramMatrix[1, ] <- paramInit
-  while (iter < maxIter & thr > tol) {
+  while (iter <= maxIter & thr > tol) {
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
-    compiledFuns$computeGrad$run(delta, postMode)
+
+    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
     gradCurr <- compiledFuns$computeGrad$grad
     accumFirst <- beta1 * accumFirst + (1 - beta1) * (gradCurr)
     accumSecond <- beta2 * accumSecond + (1 - beta2) * (gradCurr^2)
@@ -268,8 +304,6 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
     accumSecondAdj <- accumSecond / (1 - beta2^iter)
     updateCurr <-  stepsize / (sqrt(accumSecondAdj) + eps) * accumFirstAdj
     thetaNew <- paramMatrix[iter, ] + updateCurr
-    print(updateCurr)
-    print(thetaNew)
     # Check boundaries. (Projected)
     if (any(is.na(thetaNew))) {
       break
@@ -289,10 +323,29 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
     thr <- sum((gradCurr)^2)
     thetaCur <- thetaNew
     compiledFuns$setLatent$run(tail(as.matrix(compiledFuns$MCMC$mvSamples), 1))
+    
+    df <- data.frame(t(thetaCur))
+    names(df) <- paramNodes
+    cat(paste0("Iteration Number: ", iter, ".\n",
+               "Parameter Estimates:\n"))
+    print(df, row.names = FALSE)
+    if (trackEffSizeGrad) {
+      samplesGrad <- as.matrix(compiledFuns$MCMC$mvSamples)
+      samplesGrad <- samplesGrad[(ceiling(burninFrac * numMCMCSamples) + 1):numMCMCSamples,]
+      
+      effSizesGrad[iter,] <- round(effectiveSize(samplesGrad), 1)
+      cat(paste0("Effective Sample Size for gradient (raw, min): ", 
+                 min(effSizesGrad[iter, ]), 
+                 "\n")) 
+    }
     iter <- iter + 1
-    print(iter)
   }
-  return(list(param = paramMatrix, iter = iter))
+  if (trackEffSizeGrad) {
+    results <- list(param = paramMatrix, iter = iter, effSizesGrad = effSizesGrad)
+  } else {
+    results <- list(param = paramMatrix, iter = iter)
+  }
+  return(results)
 }
 
 getKernelMode <- function(samples, kern="gaussian", bdwth="nrd0",adjust) {
@@ -301,54 +354,57 @@ getKernelMode <- function(samples, kern="gaussian", bdwth="nrd0",adjust) {
   return(modeR)
 }
 
-ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit, postMode = F, 
-                    maxIter = 100, numMCMCSamples = 300, 
-                    gamma = 0.5,
-                    delta = 1e-04, tol = 1e-04, rollingAvg=F, boundary=NULL) {
+ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit, 
+                    postMode=F, maxIter=100,
+                    numMCMCSamples=300, numMCMCSamples1D=300, 
+                    delta = 1e-04,
+                    burninFrac=0.5, burninFrac1D=0.5,
+                    tol=1e-04, boundary=NULL) {
   if(is.null(boundary)){
     boundary=vector('list',length(paramNodes))
     for(i in 1:length(paramNodes)){
-      boundary[[i]]=c(getBound(model,paramNodes[i],'lower'),getBound(model,paramNodes[i],'upper'))
+      boundary[[i]] <-
+        c(getBound(model,paramNodes[i],'lower'),
+          getBound(model,paramNodes[i],'upper'))
     }
   }
   
   compiledFuns$decideIncludePrior$run(postMode)
   iter <- 1
   thr <- Inf
-  paramMatrix <- matrix(nrow = maxIter, ncol = length(paramInit))
+  paramMatrix <- matrix(nrow = maxIter + 1, ncol = length(paramInit))
   effSizes <- numeric(length = maxIter)
   latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
-  effSizesGrad<-matrix(nrow = maxIter, ncol = length(latentNodes))
+  effSizesGrad <-matrix(nrow = maxIter, ncol = length(latentNodes))
   # gelmanStat <- numeric(length = maxIter)
   paramMatrix[1, ] <- paramInit
   
-  while (iter < maxIter & thr > tol) {
+  while (iter <= maxIter & thr > tol) {
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
     
-    samples=as.matrix(compiledFuns$MCMC$mvSamples)
-    burn.in=numMCMCSamples/2
-    samplesb<-samples[(burn.in+1):numMCMCSamples,]
+    samplesGrad <- as.matrix(compiledFuns$MCMC$mvSamples)
+    samplesGrad <- samplesGrad[(ceiling(burninFrac * numMCMCSamples) + 1):numMCMCSamples,]
     
-    #effSizesGrad[iter + 1,] <- effectiveSize(samplesb)
+    effSizesGrad[iter,] <- round(effectiveSize(samplesGrad), 1)
     
-    compiledFuns$computeGrad$run(delta, postMode)
+    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
     
-    warmUp<- unname(as.matrix(compiledFuns$MCMC$mvSamples)[numMCMCSamples,])
+    warmUp <- unname(as.matrix(compiledFuns$MCMC$mvSamples)[numMCMCSamples,])
     compiledFuns$setLatent$run(warmUp)
     
-    compiledFuns$MCMC1D$run(numMCMCSamples)
+    compiledFuns$MCMC1D$run(numMCMCSamples1D)
     samples1D <- as.matrix(compiledFuns$MCMC1D$mvSamples)
     gradCurr <- compiledFuns$computeGrad$grad
-    print(gradCurr)
     samplesb <- (samples1D[, 1] - paramMatrix[iter, 1]) / gradCurr[1]
     ### burn in
-    burn.in <- numMCMCSamples / 2
-    samplesb <- samplesb[(burn.in+1):numMCMCSamples]
-    print(samplesb)
+    burn.in <- ceiling(burninFrac1D * numMCMCSamples1D)
+    samplesb <- samplesb[(burn.in+1):numMCMCSamples1D]
     effSizes[iter + 1] <- effectiveSize(samplesb)
-    print(effectiveSize(samplesb))
-    stepsize <- getKernelMode(samplesb, adjust=(numMCMCSamples / (effSizes[iter + 1] + 1))^(1/5))
+    # account for dependence of samples
+    stepsize <- getKernelMode(samplesb,
+                              adjust=(numMCMCSamples1D / 
+                                        (effSizes[iter] + 1))^(1/5))
     
     thetaCurr <- paramMatrix[iter, ] + stepsize * gradCurr
     # Check boundaries. (Projected)
@@ -367,14 +423,24 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit, postMode = F,
     }
     
     paramMatrix[iter + 1, ] <- thetaCurr
-    print(thetaCurr)
-    
     thr <- sum((gradCurr)^2)
+    
+    df <- data.frame(t(thetaCurr))
+    names(df) <- paramNodes
+    cat(paste0("Iteration Number: ", iter, ".\n",
+                 "Parameter Estimates:\n"))
+    print(df, row.names = FALSE)
+    cat(paste0("Effective Sample Size for gradient (raw, min): ", 
+               min(effSizesGrad[iter, ]), 
+               "\n"))
+    cat(paste0("Effective Sample Size for 1D sampling: ", effSizes[iter], "\n"))
     iter <- iter + 1
-    print(iter)
   }
   
-  approxHessian <- compiledFuns$computeHess$run(1e-4, postMode)
-  return(list(param = paramMatrix, iter = iter, effSizes = effSizes,
-              effSizesGrad=effSizesGrad,hess=approxHessian))
+  approxHessian <- compiledFuns$computeHess$run(1e-4, postMode, burninFrac)
+  return(list(param=paramMatrix,
+              iter=iter, 
+              effSizes=effSizes,
+              effSizesGrad=effSizesGrad,
+              hess=approxHessian))
 }

@@ -158,14 +158,15 @@ nfApproxGrad <- function(model, paramNodes, stateNodes, mvSamples, LLR) {
       D <- length(model$expandNodeNames(paramNodes))
       grad <- numeric(2)
     },
-    run = function(delta = double(0), includePrior = logical(0)) {
+    run = function(delta = double(0), includePrior = logical(0),
+                   burninFrac = double(0)) {
       P <- values(model, paramNodes)
       m <- getsize(mvSamples)
       lr <- numeric(D)
       for (j in 1:D) {
         inc <- numeric(D, value = 0)
         inc[j] <- delta
-        lr[j] <- LLR(P, inc, includePrior)
+        lr[j] <- LLR(P, inc, includePrior, burninFrac)
       }
       grad <<- (lr - 1) / delta
     }
@@ -181,10 +182,12 @@ nfLLR <- function(model, paramNodes, stateNodes, mvSamples) {
       ## What to calculate for each row of the MC sample
       calcNodes <- model$getDependencies(stateNodes)
     },
-    run = function(P = double(1), delta = double(1), includePrior = logical(0)) {
+    run = function(P = double(1), delta = double(1), includePrior = logical(0),
+                   burninFrac = double(0)) {
       ans <- 0
       m <- getsize(mvSamples)
-      for(i in (m/2 + 1):m) {
+      lower <- ceiling(burninFrac) + 1
+      for(i in lower:m) {
         ## put MCMC output into model
         copy(from = mvSamples, to = model, row = i, logProb = FALSE)
         ## Put P + delta parameters in the model and get numerator
@@ -198,7 +201,7 @@ nfLLR <- function(model, paramNodes, stateNodes, mvSamples) {
         ## tally result
         ans <- ans + exp(logNumerator - logDenominator)
       }
-      ans <- ans / m * 2
+      ans <- ans / (m - lower + 1)
       if (includePrior) {
         values(model, paramNodes) <<- P + delta
         model$calculate(paramNodes)
@@ -224,7 +227,8 @@ nfApproxHess <- function(model, paramNodes, stateNodes, mvSamples,
       D <- length(model$expandNodeNames(paramNodes))
       grad <- numeric(2)
     },
-    run = function(delta = double(0), includePrior = logical(0)) {
+    run = function(delta = double(0), includePrior = logical(0),
+                   burninFrac = double(0)) {
       grad <<- computeGrad$grad
       P <- values(model, paramNodes)
       m <- getsize(mvSamples)
@@ -234,7 +238,7 @@ nfApproxHess <- function(model, paramNodes, stateNodes, mvSamples,
           inc <- numeric(D, value = 0)
           inc[i] <- delta
           inc[j] <- inc[j] + delta 
-          lr <- LLR(P, inc, includePrior)
+          lr <- LLR(P, inc, includePrior, burninFrac)
           gradij <- (lr - 1) / delta
           hess[i, j] <- - grad[i] * grad[j] +
             1 / delta * (gradij - grad[i] - grad[j])
