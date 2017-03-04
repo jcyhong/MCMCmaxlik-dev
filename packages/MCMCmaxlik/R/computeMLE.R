@@ -129,7 +129,7 @@ NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
     compiledFuns$setLatent$run(warmUp)
     gradCurr <- compiledFuns$computeGrad$grad
     print(gradCurr)
-    approxHessian <- compiledFuns$computeHess$run(1e-4, postMode)
+    approxHessian <- compiledFuns$computeHess$run(1e-4, postMode, burninFrac)
     move <- solve(approxHessian, gradCurr)
     thetaNew <- paramMatrix[iter, ] - move
     s <- 1
