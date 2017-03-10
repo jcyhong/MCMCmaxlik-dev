@@ -4,7 +4,7 @@
 #
 # Description:
 # The following code contains the numerical experiments for the pump model:
-# fixed step size, small fixed step size, adadelta, adam, newton-raphson,
+# fixed step size, small fixed step size, adadelta, adam, Newton-Raphson,
 # and 1-D sampling. MCEM (from the R package NIMBLE) is used as a benchmark.
 #
 ##########################################################################
@@ -51,7 +51,6 @@ init <- c(10, 10)
 boundary <- list(c(0.05, 10000), c(0.05, 10000))
 numMCMCSamples <- 300
 
-setwd("~/Desktop/MCMCmaxlik_results_paper")
 ptm <- proc.time()
 resultsPumpFixed <- computeMLE(pump, paramNodesPump,
                                method="fixed", paramInit=init,
@@ -144,7 +143,8 @@ source("MCEM_with_output.R")
 pump2 <- pump$newModel()
 box <- list(list(c('alpha', 'beta'), c(0, Inf)))
 pumpMCEM <- buildMCEM(model=pump2, latentNodes='theta[1:10]',
-                      boxConstraints=box, theta0=c(10, 10)) ## new version that tracks
+                      boxConstraints=box, theta0=c(10, 10))
+## new version that tracks
 
 ptm <- proc.time()
 resultsPumpMCEM <- pumpMCEM() ## 0.8275096    1.276000

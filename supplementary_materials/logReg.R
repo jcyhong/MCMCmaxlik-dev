@@ -5,7 +5,7 @@
 # Description:
 # The following code contains the numerical experiments for the logistic 
 # regression model: fixed step size, small fixed step size, adadelta, adam, 
-# newton-raphson, and 1-D sampling. MCEM (from the R package NIMBLE) is used
+# Newton-Raphson, and 1-D sampling. MCEM (from the R package NIMBLE) is used
 # as a benchmark.
 #
 ##########################################################################
