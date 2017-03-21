@@ -28,7 +28,10 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
                     delta=1e-04,
                     burninFrac=0.5, burninFrac1D=0.5,
                     kern="gaussian", bdwth="nrd0",
-                    tol=1e-04) {
+                    tol=1e-04,
+                    blockSize = 20, runsThreshold = floor(blockSize / 5),
+                    pValThreshold = 0.3,
+                    returnHess = F) {
   if(is.null(boundary)){
     boundary=vector('list',length(paramNodes))
     for(i in 1:length(paramNodes)){
@@ -106,15 +109,32 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
                "\n"))
     cat(paste0("Effective Sample Size for 1D sampling: ", 
                effSizes[iter], "\n"))
+    if (iter > 2 * blockSize) {
+      runsPass <- checkRuns(paramMatrix[(iter - blockSize + 1):iter, ],
+                            runsThreshold)
+      if (runsPass) {
+        blockPass <- checkBlocks(paramMatrix[(iter - 2 * blockSize + 1):(iter - blockSize), ],
+                                 paramMatrix[(iter - blockSize + 1):iter, ],
+                                 pValThreshold)
+        if (blockPass) break
+      }
+    }
+    if (iter >= maxIter) break
     iter <- iter + 1
   }
   
-  approxHessian <- compiledFuns$computeHess$run(1e-4, postMode, burninFrac)
-  return(list(param=paramMatrix,
+  if (returnHess) {
+    approxHessian <- compiledFuns$computeHess$run(1e-4, postMode, burninFrac)
+    return(list(param=na.omit(paramMatrix),
+                iter=iter, 
+                effSizes=effSizes,
+                effSizesGrad=effSizesGrad,
+                hess=approxHessian))
+  }
+  return(list(param=na.omit(paramMatrix),
               iter=iter, 
               effSizes=effSizes,
-              effSizesGrad=effSizesGrad,
-              hess=approxHessian))
+              effSizesGrad=effSizesGrad))
 }
 
 getKernelMode <- function(samples, adjust=1, kern="gaussian", bdwth="nrd0") {

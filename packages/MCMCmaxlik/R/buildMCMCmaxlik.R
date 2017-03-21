@@ -87,7 +87,7 @@ buildMCMCmaxlik <- function(model, paramNodes){
   
   setParams <- nfSetParams(model, paramNodes)
   latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
-  setLatent <- nfSetLatent(model,latentNodes)
+  setLatent <- nfSetLatent(model, latentNodes)
   
   mcmcConf <- configureMCMC(model, nodes = latentNodes, monitors = latentNodes)
   MCMC <- buildMCMC(mcmcConf)

@@ -59,55 +59,10 @@ checkOutOfRange <- function(thetaNew, boundary) {
   return(outOfRange)
 }
 
-gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
-                       postMode = F, 
-                       burninFrac = 0.5,
-                       stepsize = 1, maxIter = 100, numMCMCSamples = 10000, 
-                       delta = 1e-04, tol = 1e-04) {
-  thetaCur <- paramInit
-  thetaNew <- paramInit
-  iter <- 1
-  thr <- Inf
-  paramMatrix <- matrix(nrow = maxIter, ncol = length(paramInit))
-  paramMatrix[1, ] <- paramInit
-  while (iter < maxIter & thr > tol) {
-    compiledFuns$setParams$run(paramMatrix[iter, ])
-    compiledFuns$MCMC$run(numMCMCSamples)
-    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
-    gradCurr <- compiledFuns$computeGrad$grad
-    eta <- stepsize
-    thetaNew <- paramMatrix[iter, ] + eta * gradCurr
-    print(eta * gradCurr)
-    print(thetaNew)
-    # Check boundaries. (Projected)
-    if (any(is.na(thetaNew))) {
-      break
-    }
-    for (i in 1:length(paramNodes)) {
-      if (thetaNew[i] < boundary[[i]][1]) {
-        thetaNew[i] = boundary[[i]][1]
-      }
-      else if (thetaNew[i] > boundary[[i]][2]) {
-        thetaNew[i] = boundary[[i]][2]
-      }
-      else {
-        thetaNew[i] = thetaNew[i]
-      }
-    }
-    paramMatrix[iter + 1, ] <- thetaNew
-    thr <- sum((gradCurr)^2)
-    thetaCur <- thetaNew
-    compiledFuns$setLatent$run(tail(as.matrix(compiledFuns$MCMC$mvSamples), 1))
-    iter <- iter + 1
-    print(iter)
-  }
-  return(list(param = paramMatrix, iter = iter))
-}
-
 NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
                   postMode = F, burninFrac = 0.5,
                   stepsize = 1, maxIter = 100, numMCMCSamples = 10000, 
-                  delta = 1e-04, tol = 1e-04) {
+                  delta = 1e-04, deltaHess=1e-02, tol = 1e-04) {
   
   if(is.null(boundary)){
     boundary=vector('list',length(paramNodes))
@@ -133,7 +88,8 @@ NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
     compiledFuns$setLatent$run(warmUp)
     gradCurr <- compiledFuns$computeGrad$grad
     print(gradCurr)
-    approxHessian <- compiledFuns$computeHess$run(1e-4, postMode, burninFrac)
+    approxHessian <- compiledFuns$computeHess$run(deltaHess, postMode, 
+                                                  burninFrac)
     move <- solve(approxHessian, gradCurr)
     thetaNew <- paramMatrix[iter, ] - move
     s <- 1
@@ -152,52 +108,23 @@ NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
   return(list(param = paramMatrix, iter = iter, hess = approxHessian))
 }
 
+checkBlocks <- function(mat1, mat2, pValThreshold) {
+  pVals <- sapply(1:ncol(mat1), function(j) {
+    compareBlocks(mat1[, j], mat2[, j]) 
+  })
+  list(pass = all(pVals > pValThreshold), pVals = pVals)
+}
 
-adagradMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary,
-                       postMode = F, maxIter = 100,
-                       burninFrac = 0.5,
-                       numMCMCSamples = 10000, 
-                       eta=0.01, delta = 1e-04, eps = 1e-2,
-                       tol = 1e-04) {
-  thetaCur <- paramInit
-  thetaNew <- paramInit
-  iter <- 1
-  thr <- Inf
-  paramMatrix <- matrix(nrow = maxIter, ncol = length(paramInit))
-  accumGrad <- numeric(length(paramInit))
-  paramMatrix[1, ] <- paramInit
-  while (iter < maxIter & thr > tol) {
-    compiledFuns$setParams$run(paramMatrix[iter, ])
-    compiledFuns$MCMC$run(numMCMCSamples)
-    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
-    gradCurr <- compiledFuns$computeGrad$grad
-    accumGrad <- accumGrad + (gradCurr ^ 2)
-    RMSGrad <- sqrt(accumGrad + eps)
-    updateCurr <- eta / RMSGrad * gradCurr
-    thetaNew <- paramMatrix[iter, ] + updateCurr
-    print(eta / RMSGrad * gradCurr)
-    print(thetaNew)
-    # Check boundaries. (Projected)
-    if (any(is.na(thetaNew))) {
-      break
-    }
-    for (i in 1:length(paramNodes)) {
-      if (thetaNew[i] < boundary[[i]][1]) {
-        thetaNew[i] = boundary[[i]][1]
-      }
-      else if (thetaNew[i] > boundary[[i]][2]) {
-        thetaNew[i] = boundary[[i]][2]
-      }
-      else {
-        thetaNew[i] = thetaNew[i]
-      }
-    }
-    paramMatrix[iter + 1, ] <- thetaNew
-    thr <- sum((gradCurr)^2)
-    thetaCur <- thetaNew
-    compiledFuns$setLatent$run(tail(as.matrix(compiledFuns$MCMC$mvSamples), 1))
-    iter <- iter + 1
-    print(iter)
-  }
-  return(list(param = paramMatrix, iter = iter))
+compareBlocks <- function(seq1, seq2) {
+  overallMean <- mean(c(seq1, seq2))
+  res1 <- seq1 - overallMean
+  res2 <- seq2 - overallMean
+  t.test(res1, res2)$p.value
+}
+
+checkRuns <- function(mat, runsThreshold) {
+  numRuns <- apply(mat, 2, function(seq1) {
+    length(rle(diff(seq1) > 0)$lengths)
+  })
+  list(pass = all(numRuns >= runsThreshold), numRuns = numRuns)
 }

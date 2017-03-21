@@ -1,4 +1,4 @@
-#' Compute the MLE using Adam.
+#' Compute the MLE using Adagrad.
 #'
 #' This function computes the MLE of the top-level parameters of a
 #' hierarchical model with latent variables using Adam.
@@ -17,28 +17,25 @@
 #' @param burninFrac the fraction of burn-in samples for gradient approximation
 #' @param stepsize the step size
 #' @param eps epsilon
-#' @param beta1 beta1
-#' @param beta2 beta2
 #' @param blockSize the size of blocks for convergence checking
 #' @param runsThreshold the cutoff for acceptable number of runs within a block
-#' of iterates
+#' of iterates, default to one-fifth of the block size
 #' @param pValsThreshold the cutoff of p-value threshold for comparing
 #' averages between two blocks of iterates
 #' @keywords MLE
 #' @export
 #' @examples
-#' compileMLE()
+#' adagradMLE()
 
-adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
-                    boundary=NULL,
-                    postMode = F, trackEffSizeGrad = F,
-                    maxIter = 300, numMCMCSamples = 20, 
-                    delta = 1e-04, 
-                    burninFrac = 0.5,
-                    stepsize=0.3,
-                    eps=1e-4, beta1=0.9, beta2=0.999,
-                    blockSize = 20, runsThreshold = floor(blockSize / 5),
-                    pValThreshold = 0.3) {
+adagradMLE <- function(model, paramNodes, compiledFuns, paramInit, 
+                       boundary=NULL,
+                       postMode = F, maxIter = 100,
+                       burninFrac = 0.5,
+                       numMCMCSamples = 10000, 
+                       eta=0.01, delta = 1e-04, eps = 1e-2,
+                       tol = 1e-04,
+                       blockSize = 20, runsThreshold = floor(blockSize / 5),
+                       pValThreshold = 0.3)) {
   
   # Determine the boundary conditions.
   if (is.null(boundary)) {
@@ -53,26 +50,18 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
   thetaCur <- paramInit
   thetaNew <- paramInit
   iter <- 1
-  converge <- F
-  paramMatrix <- matrix(nrow = maxIter + 1, ncol = length(paramInit))
-  if (trackEffSizeGrad) {
-    latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
-    effSizesGrad <- matrix(nrow = maxIter, ncol = length(latentNodes))
-  }
-  accumFirst <- numeric(length(paramInit))
-  accumSecond <- numeric(length(paramInit))
+  thr <- Inf
+  paramMatrix <- matrix(nrow = maxIter, ncol = length(paramInit))
+  accumGrad <- numeric(length(paramInit))
   paramMatrix[1, ] <- paramInit
-  while (iter <= maxIter) {
+  while (iter < maxIter & thr > tol) {
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
-    
     compiledFuns$computeGrad$run(delta, postMode, burninFrac)
     gradCurr <- compiledFuns$computeGrad$grad
-    accumFirst <- beta1 * accumFirst + (1 - beta1) * (gradCurr)
-    accumSecond <- beta2 * accumSecond + (1 - beta2) * (gradCurr^2)
-    accumFirstAdj <- accumFirst / (1 - beta1^iter)
-    accumSecondAdj <- accumSecond / (1 - beta2^iter)
-    updateCurr <-  stepsize / (sqrt(accumSecondAdj) + eps) * accumFirstAdj
+    accumGrad <- accumGrad + (gradCurr ^ 2)
+    RMSGrad <- sqrt(accumGrad + eps)
+    updateCurr <- eta / RMSGrad * gradCurr
     thetaNew <- paramMatrix[iter, ] + updateCurr
     # Check boundaries. (Projected)
     if (any(is.na(thetaNew))) {
@@ -90,30 +79,15 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
       }
     }
     paramMatrix[iter + 1, ] <- thetaNew
+    thr <- sum((gradCurr)^2)
     thetaCur <- thetaNew
     compiledFuns$setLatent$run(tail(as.matrix(compiledFuns$MCMC$mvSamples), 1))
-    
-    df <- data.frame(t(thetaCur))
-    names(df) <- paramNodes
-    cat(paste0("Iteration Number: ", iter, ".\n",
-               "Parameter Estimates:\n"))
-    print(df, row.names = FALSE)
-    if (trackEffSizeGrad) {
-      samplesGrad <- as.matrix(compiledFuns$MCMC$mvSamples)
-      samplesGrad <- samplesGrad[
-        (ceiling(burninFrac * numMCMCSamples) + 1):numMCMCSamples, ]
-      
-      effSizesGrad[iter,] <- round(effectiveSize(samplesGrad), 1)
-      cat(paste0("Effective Sample Size for gradient (raw, min): ", 
-                 min(effSizesGrad[iter, ]), 
-                 "\n")) 
-    }
     
     # Convergence test
     if (iter > 2 * blockSize) {
       # 1. Check oscillating behaviors.
       runsResults <- checkRuns(paramMatrix[(iter - blockSize + 1):iter, ],
-                            runsThreshold)
+                               runsThreshold)
       if (runsResults$pass) {
         # 2. Check whether the average stays constant.
         blockResults <- checkBlocks(
@@ -135,7 +109,7 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
              "\n"))
   if (runsResults$pass) {
     cat(paste0("p-value from 2-sample t-test for block comparisons: ",
-                 paste(round(blockResults$pVal, 3), collapse=", "),
+               paste(round(blockResults$pVal, 3), collapse=", "),
                "\n")) 
   }
   
@@ -144,11 +118,5 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
     cat("Use a different starting point or increase the MCMC sample size.\n")
   }
   
-  if (trackEffSizeGrad) {
-    results <- list(param = na.omit(paramMatrix), iter = iter, 
-                    effSizesGrad = effSizesGrad)
-  } else {
-    results <- list(param = na.omit(paramMatrix), iter = iter)
-  }
-  return(results)
+  return(list(param = paramMatrix, iter = iter))
 }

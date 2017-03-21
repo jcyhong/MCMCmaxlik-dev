@@ -15,7 +15,6 @@
 #' @param numMCMCSamples MCMC sample size for gradient approximation
 #' @param delta finite element differences
 #' @param burninFrac the fraction of burn-in samples for gradient approximation
-#' @param tol the tolerance
 #' @param stepsize the step size
 #' @param eps epsilon
 #' @param rho rho
@@ -30,8 +29,9 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
                         maxIter = 100, numMCMCSamples = 10000, 
                         delta = 1e-04, 
                         burninFrac = 0.5,
-                        tol = 1e-04,
-                        eps = 1e-2, rho=0.9) {
+                        eps = 1e-2, rho=0.9,
+                        blockSize = 20, runsThreshold = floor(blockSize / 5),
+                        pValThreshold = 0.3) {
   if (is.null(boundary)) {
     boundary=vector('list',length(paramNodes))
     for(i in 1:length(paramNodes)){
@@ -52,7 +52,7 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
   accumGrad <- numeric(length(paramInit))
   accumUpdate <- numeric(length(paramInit))
   paramMatrix[1, ] <- paramInit
-  while (iter <= maxIter & thr > tol) {
+  while (iter <= maxIter) {
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
     compiledFuns$computeGrad$run(delta, postMode, burninFrac)
@@ -81,7 +81,6 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
       }
     }
     paramMatrix[iter + 1, ] <- thetaNew
-    thr <- sum((gradCurr)^2)
     thetaCur <- thetaNew
     compiledFuns$setLatent$run(tail(as.matrix(compiledFuns$MCMC$mvSamples), 1))
     
@@ -99,12 +98,46 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
                  min(effSizesGrad[iter, ]), 
                  "\n")) 
     }
+    # Convergence test
+    if (iter > 2 * blockSize) {
+      # 1. Check oscillating behaviors.
+      runsResults <- checkRuns(paramMatrix[(iter - blockSize + 1):iter, ],
+                               runsThreshold)
+      if (runsResults$pass) {
+        # 2. Check whether the average stays constant.
+        blockResults <- checkBlocks(
+          paramMatrix[(iter - 2 * blockSize + 1):(iter - blockSize), ],
+          paramMatrix[(iter - blockSize + 1):iter, ],
+          pValThreshold)
+        if (blockResults$pass) {
+          converge <- T
+          break 
+        }
+      }
+    }
     iter <- iter + 1
   }
+  cat("*** Convergence diagnostics ***\n")
+  cat(paste0("Number of runs in the last ", 
+             blockSize, " iterations: ", 
+             paste0(runsResults$numRuns, collapse=", "),
+             "\n"))
+  if (runsResults$pass) {
+    cat(paste0("p-value from 2-sample t-test for block comparisons: ",
+               paste(round(blockResults$pVal, 3), collapse=", "),
+               "\n")) 
+  }
+  
+  if (!converge) {
+    cat("*** Warning: Non-convergence ***\n")
+    cat("Use a different starting point or increase the MCMC sample size.\n")
+  }
+  
   if (trackEffSizeGrad) {
-    results <- list(param = paramMatrix, iter = iter, effSizesGrad = effSizesGrad)
+    results <- list(param = na.omit(paramMatrix), iter = iter, 
+                    effSizesGrad = effSizesGrad)
   } else {
-    results <- list(param = paramMatrix, iter = iter)
+    results <- list(param = na.omit(paramMatrix), iter = iter)
   }
   return(results)
 }
