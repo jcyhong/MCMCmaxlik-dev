@@ -77,7 +77,7 @@ inits <- list(beta1=1, beta2=1, beta3=1, beta4=1, varF=5, varM=5)
 glmmMod <- nimbleModel(code=code, constants=constants, data=data, 
                        inits=inits, check=FALSE)
 
-paramNodes <- glmmMod$getNodeNames(topOnly=T,stochOnly=T) 
+paramNodes <- glmmMod$getNodeNames(topOnly=T, stochOnly=T) 
 ## "beta1" "beta2" "beta3" "beta4" "varF"  "varM"
 
 Cglmm <- compileNimble(glmmMod)
@@ -101,12 +101,7 @@ resultsGLMMFixed <- computeMLE(glmmMod, paramNodes,
 timeGLMMFixed <- proc.time() - ptm  ##  103.498 
 save(resultsGLMMFixed, file="GLMMFixed.RData")
 
-mean(resultsGLMMFixed$param[201:300,1], trim=0.2)  ## 0.869343
-mean(resultsGLMMFixed$param[201:300,2], trim=0.2)  ## 0.2777287
-mean(resultsGLMMFixed$param[201:300,3], trim=0.2)  ## -1.625707
-mean(resultsGLMMFixed$param[201:300,4], trim=0.2)  ## 0.867504
-mean(resultsGLMMFixed$param[201:300,5], trim=0.2)  ## 1.296163
-mean(resultsGLMMFixed$param[201:300,6], trim=0.2)  ## 2.148198
+apply(tail(resultsGLMMFixed$param, 100), 2, mean, trim=0.2)
 
 # 2. Small fixed step size ----------------------------------------
 ptm <- proc.time()
@@ -120,12 +115,7 @@ resultsGLMMFixedSmall <- computeMLE(glmmMod, paramNodes,
 timeGLMMFixedSmall <- proc.time() - ptm  ## 104.788 
 save(resultsGLMMFixedSmall, file="GLMMFixedSmall.RData")
 
-mean(resultsGLMMFixedSmall$param[201:300,1], trim=0.2)  ## 0.847333
-mean(resultsGLMMFixedSmall$param[201:300,2], trim=0.2)  ## 0.2725439
-mean(resultsGLMMFixedSmall$param[201:300,3], trim=0.2)  ## -1.595179
-mean(resultsGLMMFixedSmall$param[201:300,4], trim=0.2)  ## 0.8482215
-mean(resultsGLMMFixedSmall$param[201:300,5], trim=0.2)  ## 1.747082
-mean(resultsGLMMFixedSmall$param[201:300,6], trim=0.2)  ##  1.840612
+apply(tail(resultsGLMMFixedSmall$param, 100), 2, mean, trim=0.2)
 
 # 3. Adadelta ----------------------------------------
 ptm <- proc.time()
@@ -133,17 +123,12 @@ resultsAdadelta <- computeMLE(glmmMod, paramNodes,
                               method="adadelta", paramInit=init,
                               compiledFuns=compiledFunsglmm,
                               numMCMCSamples=numMCMCSamples,
-                              maxIter=300,
+                              maxIter=20,
                               boundary=boundary)
 timeGLMMAdadelta <- proc.time() - ptm  ## 107.366 
 save(resultsAdadelta, file="GLMMAdadelta.RData")
 
-mean(resultsAdadelta$param[201:300,1], trim=0.2) ## 0.969705
-mean(resultsAdadelta$param[201:300,2], trim=0.2) ## 0.3126434
-mean(resultsAdadelta$param[201:300,3], trim=0.2) ## -1.785531
-mean(resultsAdadelta$param[201:300,4], trim=0.2) ## 0.955997
-mean(resultsAdadelta$param[201:300,5], trim=0.2) ## 1.081136
-mean(resultsAdadelta$param[201:300,6], trim=0.2) ## 1.007406
+apply(tail(resultsAdadelta$param, 100), 2, mean, trim=0.2)
 
 # 4. Adam ----------------------------------------
 ptm <- proc.time()
@@ -151,19 +136,12 @@ resultsAdam <- computeMLE(glmmMod, paramNodes,
                           method="adam", paramInit=init,
                           compiledFuns=compiledFunsglmm,
                           numMCMCSamples=numMCMCSamples,
-                          stepsize=0.3,
-                          eps=1e-4,
                           maxIter=300,
-                          boundary=boundary, tol=0)
+                          boundary=boundary)
 timeGLMMAdam <- proc.time() - ptm   ## 107.962 
 save(resultsAdam, file="GLMMAdam.RData")
 
-mean(resultsAdam$param[201:300,1], trim=0.2)  ## 0.9153553
-mean(resultsAdam$param[201:300,2], trim=0.2)  ## 0.293313
-mean(resultsAdam$param[201:300,3], trim=0.2)  ## -1.714639
-mean(resultsAdam$param[201:300,4], trim=0.2)  ##  0.9163349
-mean(resultsAdam$param[201:300,5], trim=0.2)  ## 1.119281
-mean(resultsAdam$param[201:300,6], trim=0.2)  ## 1.331326
+apply(tail(resultsAdam$param, 100), 2, mean, trim=0.2)
 
 # 5. Newton-Raphson ----------------------------------------
 ptm <- proc.time()

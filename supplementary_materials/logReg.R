@@ -69,9 +69,8 @@ mean(resultsLogregFixed$param[201:300,2], trim=.2)  ## 1.25159
 mean(resultsLogregFixed$param[201:300,3], trim=.2)  ## 0.8827718
 save(resultsLogregFixed, file="logRegFixed.RData")
 
-ptm <- proc.time()
-
 # 2. Small fixed step size ----------------------------------------
+ptm <- proc.time()
 resultsLogregSmallFixed <- computeMLE(logreg, paramNodesLogreg,
                                       method="fixed", paramInit=init,
                                       stepsize=0.005,
@@ -94,9 +93,9 @@ resultsLogregAdadelta <- computeMLE(logreg, paramNodesLogreg,
                                     maxIter=300,
                                     boundary=boundary)
 timeLogRegAdadelta <- proc.time() - ptm ## 2.758 
-mean(resultsLogregAdadelta$param[201:300,1], trim=.2)  ## -0.555296
-mean(resultsLogregAdadelta$param[201:300,2], trim=.2)  ## 1.319334
-mean(resultsLogregAdadelta$param[201:300,3], trim=.2)  ## 0.3160231
+mean(tail(resultsLogregAdadelta$param[, 1], 20), trim=.2)  ## -0.555296
+mean(tail(resultsLogregAdadelta$param[, 2], 20), trim=.2)  ## 1.319334
+mean(tail(resultsLogregAdadelta$param[, 3], 20), trim=.2)  ## 0.3160231
 save(resultsLogregAdadelta, file="logRegAdadelta.RData")
 
 # 4. Adam ----------------------------------------
@@ -110,9 +109,9 @@ resultsLogregAdam <- computeMLE(logreg, paramNodesLogreg,
                                 maxIter=300,
                                 boundary=boundary)
 timeLogRegAdam <- proc.time() - ptm ## 2.789 
-mean(resultsLogregAdam$param[201:300,1], trim=.2) ## -0.5482783
-mean(resultsLogregAdam$param[201:300,2], trim=.2) ##  1.310051
-mean(resultsLogregAdam$param[201:300,3], trim=.2) ## 0.2494285
+mean(tail(resultsLogregAdam$param[, 1], 20), trim=.2) ## -0.5482783
+mean(tail(resultsLogregAdam$param[, 2], 20), trim=.2) ##  1.310051
+mean(tail(resultsLogregAdam$param[, 3], 20), trim=.2) ## 0.2494285
 save(resultsLogregAdam, file="logRegAdam.RData")
 
 # 5. Newton-Raphson ----------------------------------------
@@ -138,9 +137,9 @@ resultsLogreg1D <- computeMLE(logreg, paramNodesLogreg,
                               numMCMCSamples=300, numMCMCSamples1D=300, 
                               maxIter=300)
 timeLogReg1D <- proc.time() - ptm ## 10.704 
-mean(resultsLogreg1D$param[201:300,1], trim=.2)  ## -0.5677065
-mean(resultsLogreg1D$param[201:300,2], trim=.2)  ## 1.327946
-mean(resultsLogreg1D$param[201:300,3], trim=.2)  ## 0.2804238
+mean(tail(resultsLogreg1D$param[, 1]), trim=.2)  ## -0.5677065
+mean(tail(resultsLogreg1D$param[, 2]), trim=.2)  ## 1.327946
+mean(tail(resultsLogreg1D$param[, 3]), trim=.2)  ## 0.2804238
 save(resultsLogreg1D, file="logReg1D.RData")
 
 # MCEM -----------------------------

@@ -58,11 +58,11 @@ resultsPumpFixed <- computeMLE(pump, paramNodesPump,
                                stepsize=0.05,
                                numMCMCSamples=numMCMCSamples,
                                maxIter=500,
-                               boundary=boundary, tol=0)
+                               boundary=boundary)
 timePumpFixed <- proc.time() - ptm
 timePumpFixed ##  4.475 
-mean(resultsPumpFixed$param[401:500,1], trim=.2) ## 0.8221844
-mean(resultsPumpFixed$param[401:500,2], trim=.2) ## 1.260489
+mean(tail(resultsPumpFixed$param[, 1], 20), trim=.2) ## 0.8221844
+mean(tail(resultsPumpFixed$param[, 2], 20), trim=.2) ## 1.260489
 save(resultsPumpFixed, file="pumpFixed.RData")
 
 # 2. Small fixed step size ----------------------------------------
@@ -73,11 +73,11 @@ resultsPumpSmallFixed <- computeMLE(pump, paramNodesPump,
                                     stepsize=0.005,
                                     numMCMCSamples=numMCMCSamples,
                                     maxIter=5000,
-                                    boundary=boundary, tol=0)
+                                    boundary=boundary)
 timePumpSmallFixed <- proc.time() - ptm
 timePumpSmallFixed ## 46.134 
-mean(resultsPumpSmallFixed$param[4901:5000,1], trim=.2) ## 0.8230727
-mean(resultsPumpSmallFixed$param[4901:5000,2], trim=.2) ## 1.262879
+mean(tail(resultsPumpSmallFixed$param[, 1], 20), trim=.2) ## 0.8230727
+mean(tail(resultsPumpSmallFixed$param[, 2], 20), trim=.2) ## 1.262879
 save(resultsPumpSmallFixed, file="pumpSmallFixed.RData")
 
 # 3. Adadelta ----------------------------------------
@@ -90,8 +90,8 @@ resultsPumpAdadelta <- computeMLE(pump, paramNodesPump,
                                   boundary=boundary)
 timePumpAdadelta <- proc.time() - ptm
 timePumpAdadelta ## 3.023 
-mean(resultsPumpAdadelta$param[201:300,1], trim=.2) ## 1.054878
-mean(resultsPumpAdadelta$param[201:300,2], trim=.2) ## 1.811111
+mean(tail(resultsPumpAdadelta$param[, 1], 20), trim=.2) ## 1.054878
+mean(tail(resultsPumpAdadelta$param[, 2], 20), trim=.2) ## 1.811111
 save(resultsPumpAdadelta, file="pumpAdadelta.RData")
 
 # 4. Adam ----------------------------------------
@@ -100,20 +100,18 @@ resultsPumpAdam <- computeMLE(pump, paramNodesPump,
                               method="adam", paramInit=init,
                               compiledFuns=compiledFunsPump,
                               numMCMCSamples=numMCMCSamples,
-                              stepsize=0.3,
-                              eps=1e-4,
                               maxIter=300,
                               boundary=boundary)
 timePumpAdam <- proc.time() - ptm
 timePumpAdam ## 2.975 
-mean(resultsPumpAdam$param[201:300,1], trim=.2) ## 0.8222032
-mean(resultsPumpAdam$param[201:300,2], trim=.2) ## 1.260498
+mean(tail(resultsPumpAdam$param[, 1], 20), trim=.2) ## 0.8222032
+mean(tail(resultsPumpAdam$param[, 2], 20), trim=.2) ## 1.260498
 save(resultsPumpAdam, file="pumpAdam.RData")
 
 # 5. Newton-Raphson ----------------------------------------
 ptm <- proc.time()
 resultsPumpNR <- computeMLE(pump, paramNodes=paramNodesPump,
-                            method="NR", paramInit=c(10,10),
+                            method="NR", paramInit=init,
                             compiledFuns=compiledFunsPump,
                             numMCMCSamples=numMCMCSamples,
                             tol=1e-20,
@@ -134,9 +132,32 @@ resultsPump1D <- computeMLE(pump, paramNodesPump,
                             maxIter=300)
 timePump1D <- proc.time() - ptm
 timePump1D ## 10.838 
-mean(resultsPump1D$param[201:300,1], trim=.2) ## 0.8666035
-mean(resultsPump1D$param[201:300,2], trim=.2) ## 1.330581
+mean(tail(resultsPump1D$param[, 1], 20), trim=.2) ## 0.8666035
+mean(tail(resultsPump1D$param[, 2], 20), trim=.2) ## 1.330581
 save(resultsPump1D, file="pump1D.RData")
+
+# 7. Hybrid
+# Run 10 iterations of 1D, and then run Adam.
+ptm <- proc.time()
+resultsPump1DFirst <- computeMLE(pump, paramNodesPump,
+                                 method="ga1D", paramInit=init,
+                                 compiledFuns=compiledFunsPump,
+                                 numMCMCSamples=numMCMCSamples, 
+                                 numMCMCSamples1D=300, 
+                                 maxIter=10)
+resultsPumpAdamSecond <- computeMLE(pump, paramNodesPump,
+                                    method="adam", 
+                                    paramInit=tail(resultsPump1DFirst$param, 1),
+                                    compiledFuns=compiledFunsPump,
+                                    numMCMCSamples=numMCMCSamples,
+                                    stepsize=0.3,
+                                    eps=1e-4,
+                                    maxIter=300,
+                                    boundary=boundary)
+mean(tail(resultsPumpAdamSecond$param[, 1], 20), trim=.2) ## 0.8666035
+mean(tail(resultsPumpAdamSecond$param[, 2], 20), trim=.2) ## 1.330581
+timePumpHybrid <- proc.time() - ptm
+timePumpHybrid
 
 # MCEM -----------------------------
 source("MCEM_with_output.R")
