@@ -35,7 +35,7 @@ adagradMLE <- function(model, paramNodes, compiledFuns, paramInit,
                        eta=0.01, delta = 1e-04, eps = 1e-2,
                        tol = 1e-04,
                        blockSize = 20, runsThreshold = floor(blockSize / 5),
-                       pValThreshold = 0.3)) {
+                       pValThreshold = 0.3) {
   
   # Determine the boundary conditions.
   if (is.null(boundary)) {

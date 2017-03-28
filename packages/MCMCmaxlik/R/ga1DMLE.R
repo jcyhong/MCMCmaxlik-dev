@@ -109,17 +109,23 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
                "\n"))
     cat(paste0("Effective Sample Size for 1D sampling: ", 
                effSizes[iter], "\n"))
+    # Convergence test
     if (iter > 2 * blockSize) {
-      runsPass <- checkRuns(paramMatrix[(iter - blockSize + 1):iter, ],
-                            runsThreshold)
-      if (runsPass) {
-        blockPass <- checkBlocks(paramMatrix[(iter - 2 * blockSize + 1):(iter - blockSize), ],
-                                 paramMatrix[(iter - blockSize + 1):iter, ],
-                                 pValThreshold)
-        if (blockPass) break
+      # 1. Check oscillating behaviors.
+      runsResults <- checkRuns(paramMatrix[(iter - blockSize + 1):iter, ],
+                               runsThreshold)
+      if (runsResults$pass) {
+        # 2. Check whether the average stays constant.
+        blockResults <- checkBlocks(
+          paramMatrix[(iter - 2 * blockSize + 1):(iter - blockSize), ],
+          paramMatrix[(iter - blockSize + 1):iter, ],
+          pValThreshold)
+        if (blockResults$pass) {
+          converge <- T
+          break 
+        }
       }
     }
-    if (iter >= maxIter) break
     iter <- iter + 1
   }
   

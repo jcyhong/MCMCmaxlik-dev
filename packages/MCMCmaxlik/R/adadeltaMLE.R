@@ -15,7 +15,6 @@
 #' @param numMCMCSamples MCMC sample size for gradient approximation
 #' @param delta finite element differences
 #' @param burninFrac the fraction of burn-in samples for gradient approximation
-#' @param stepsize the step size
 #' @param eps epsilon
 #' @param rho rho
 #' @keywords MLE
@@ -26,7 +25,7 @@
 adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit, 
                         boundary = NULL,
                         postMode = F, trackEffSizeGrad = F,
-                        maxIter = 100, numMCMCSamples = 10000, 
+                        maxIter = 100, numMCMCSamples = 300, 
                         delta = 1e-04, 
                         burninFrac = 0.5,
                         eps = 1e-2, rho=0.9,
@@ -91,7 +90,8 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
     print(df, row.names = FALSE)
     if (trackEffSizeGrad) {
       samplesGrad <- as.matrix(compiledFuns$MCMC$mvSamples)
-      samplesGrad <- samplesGrad[(ceiling(burninFrac * numMCMCSamples) + 1):numMCMCSamples,]
+      samplesGrad <- 
+        samplesGrad[(ceiling(burninFrac * numMCMCSamples) + 1):numMCMCSamples,]
       
       effSizesGrad[iter,] <- round(effectiveSize(samplesGrad), 1)
       cat(paste0("Effective Sample Size for gradient (raw, min): ", 

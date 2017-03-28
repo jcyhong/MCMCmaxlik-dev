@@ -59,55 +59,6 @@ checkOutOfRange <- function(thetaNew, boundary) {
   return(outOfRange)
 }
 
-NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
-                  postMode = F, burninFrac = 0.5,
-                  stepsize = 1, maxIter = 100, numMCMCSamples = 10000, 
-                  delta = 1e-04, deltaHess=1e-02, tol = 1e-04) {
-  
-  if(is.null(boundary)){
-    boundary=vector('list',length(paramNodes))
-    for(i in 1:length(paramNodes)){
-      boundary[[i]]=c(getBound(model,paramNodes[i],'lower'),
-                      getBound(model,paramNodes[i],'upper'))
-    }
-  }
-  
-  thetaCur <- paramInit
-  thetaNew <- paramInit
-  iter <- 1
-  thr <- Inf
-  paramMatrix <- matrix(nrow = maxIter, ncol = length(paramInit))
-  paramMatrix[1, ] <- paramInit
-  
-  while (iter < maxIter & thr > tol) {
-    compiledFuns$setParams$run(paramMatrix[iter, ])
-    compiledFuns$MCMC$run(numMCMCSamples)
-    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
-    ## add warm up
-    warmUp <- unname(as.matrix(compiledFuns$MCMC$mvSamples)[numMCMCSamples,])
-    compiledFuns$setLatent$run(warmUp)
-    gradCurr <- compiledFuns$computeGrad$grad
-    print(gradCurr)
-    approxHessian <- compiledFuns$computeHess$run(deltaHess, postMode, 
-                                                  burninFrac)
-    move <- solve(approxHessian, gradCurr)
-    thetaNew <- paramMatrix[iter, ] - move
-    s <- 1
-    #print(thetaNew)
-    while (checkOutOfRange(thetaNew, boundary)) {
-      thetaNew <- paramMatrix[iter, ] - 0.8^s * move
-      s <- s + 1
-    }
-    paramMatrix[iter + 1, ] <- thetaNew
-    thr <- sum((gradCurr)^2)
-    thetaCur <- thetaNew
-    print(thetaCur)
-    iter <- iter + 1
-    print(iter)
-  }
-  return(list(param = paramMatrix, iter = iter, hess = approxHessian))
-}
-
 checkBlocks <- function(mat1, mat2, pValThreshold) {
   pVals <- sapply(1:ncol(mat1), function(j) {
     compareBlocks(mat1[, j], mat2[, j]) 
@@ -116,10 +67,8 @@ checkBlocks <- function(mat1, mat2, pValThreshold) {
 }
 
 compareBlocks <- function(seq1, seq2) {
-  overallMean <- mean(c(seq1, seq2))
-  res1 <- seq1 - overallMean
-  res2 <- seq2 - overallMean
-  t.test(res1, res2)$p.value
+  benchmark <- mean(seq1)
+  t.test(seq2, mu = benchmark)$p.value
 }
 
 checkRuns <- function(mat, runsThreshold) {
