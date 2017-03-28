@@ -128,20 +128,23 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
     }
     iter <- iter + 1
   }
-  cat("*** Convergence diagnostics ***\n")
-  cat(paste0("Number of runs in the last ", 
-             blockSize, " iterations: ", 
-             paste0(runsResults$numRuns, collapse=", "),
-             "\n"))
-  if (runsResults$pass) {
-    cat(paste0("p-value from 2-sample t-test for block comparisons: ",
-                 paste(round(blockResults$pVal, 3), collapse=", "),
-               "\n")) 
-  }
   
-  if (!converge) {
-    cat("*** Warning: Non-convergence ***\n")
-    cat("Use a different starting point or increase the MCMC sample size.\n")
+  if (iter > 2 * blockSize) {
+    cat("*** Convergence diagnostics ***\n")
+    cat(paste0("Number of runs in the last ", 
+               blockSize, " iterations: ", 
+               paste0(runsResults$numRuns, collapse=", "),
+               "\n"))
+    if (runsResults$pass) {
+      cat(paste0("p-value from 2-sample t-test for block comparisons: ",
+                 paste(round(blockResults$pVal, 3), collapse=", "),
+                 "\n")) 
+    }
+    
+    if (!converge) {
+      cat("*** Warning: Non-convergence ***\n")
+      cat("Use a different starting point or increase the MCMC sample size.\n")
+    }
   }
   
   if (trackEffSizeGrad) {

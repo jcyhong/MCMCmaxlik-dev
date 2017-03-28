@@ -54,7 +54,7 @@ gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit,
   thetaNew <- paramInit
   converge <- F
   iter <- 1
-  paramMatrix <- matrix(nrow = maxIter, ncol = length(paramInit))
+  paramMatrix <- matrix(nrow = maxIter + 1, ncol = length(paramInit))
   paramMatrix[1, ] <- paramInit
 
   while (iter <= maxIter) {
@@ -64,8 +64,6 @@ gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit,
     gradCurr <- compiledFuns$computeGrad$grad
     eta <- stepsize
     thetaNew <- paramMatrix[iter, ] + eta * gradCurr
-    print(eta * gradCurr)
-    print(thetaNew)
     # Check boundaries. (Projected)
     if (any(is.na(thetaNew))) {
       break
@@ -120,10 +118,25 @@ gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit,
     }
     iter <- iter + 1
   }
-  if (!converge) {
-    print("Warning: Non-convergence.")
-    print("Use a different starting point or increase the MCMC sample size.")
+  
+  if (iter > 2 * blockSize) {
+    cat("*** Convergence diagnostics ***\n")
+    cat(paste0("Number of runs in the last ", 
+               blockSize, " iterations: ", 
+               paste0(runsResults$numRuns, collapse=", "),
+               "\n"))
+    if (runsResults$pass) {
+      cat(paste0("p-value from 2-sample t-test for block comparisons: ",
+                 paste(round(blockResults$pVal, 3), collapse=", "),
+                 "\n")) 
+    }
+    
+    if (!converge) {
+      cat("*** Warning: Non-convergence ***\n")
+      cat("Use a different starting point or increase the MCMC sample size.\n")
+    }
   }
+  
   if (trackEffSizeGrad) {
     results <- list(param = na.omit(paramMatrix), iter = iter, 
                     effSizesGrad = effSizesGrad)

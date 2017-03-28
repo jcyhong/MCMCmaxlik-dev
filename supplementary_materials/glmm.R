@@ -123,7 +123,7 @@ resultsAdadelta <- computeMLE(glmmMod, paramNodes,
                               method="adadelta", paramInit=init,
                               compiledFuns=compiledFunsglmm,
                               numMCMCSamples=numMCMCSamples,
-                              maxIter=20,
+                              maxIter=300,
                               boundary=boundary)
 timeGLMMAdadelta <- proc.time() - ptm  ## 107.366 
 save(resultsAdadelta, file="GLMMAdadelta.RData")
