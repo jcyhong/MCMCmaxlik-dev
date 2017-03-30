@@ -1,0 +1,85 @@
+---
+title: "Example: pump"
+author: "Johnny Hong"
+date: "March 29, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Pump example
+
+As a simple example, we use the Gamma-Poisson hierachical model for nuclear pumps.
+
+```{r}
+library("MCMCmaxlik")
+```
+
+NIMBLE uses the BUGS language to specify a hierarchical model.
+```{r model}
+pumpCode <- nimbleCode({
+  for (i in 1:N) {
+    theta[i] ~ dgamma(alpha, beta)
+    lambda[i] <- theta[i] * t[i]
+    x[i] ~ dpois(lambda[i])
+  }
+  alpha ~ dexp(1.0)
+  beta ~ dgamma(0.1, 1.0)
+})
+pumpConsts <- list(N=10,
+                   t=c(94.3, 15.7, 62.9, 126, 5.24,
+                         31.4, 1.05, 1.05, 2.1, 10.5))
+pumpData <- list(x=c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22))
+pumpInits <- list(alpha=1, beta=1,
+                  theta=rep(0.1, pumpConsts$N))
+
+pump <- nimbleModel(code=pumpCode, name='pump', constants=pumpConsts,
+                    data=pumpData, inits=pumpInits)
+paramNodesPump <- pump$getNodeNames(topOnly=T)
+Cpump <- compileNimble(pump)
+```
+
+
+## Running the algorithms
+First, we compile the algorithms in NIMBLE using `buildMCMCmaxlik()`.
+```{r compile}
+compiledFunsPump <- buildMCMCmaxlik(pump, paramNodesPump)
+```
+
+Then we can run the algorithms using `computeMLE()`.
+```{r adam, results="hide"}
+resultsPumpAdam <- computeMLE(model=pump, 
+                              paramNodes = paramNodesPump, 
+                              paramInit=c(10, 10),
+                              compiledFuns=compiledFunsPump)
+```
+
+The output contains the history of iterates, the number of iterations and the 20 percent
+trimmed average of the last 20 iterates.
+```{r adamResult}
+resultsPumpAdam$MLE
+```
+
+The history of iterates allows the users to study the convergence of the algorithms:
+```{r convergence}
+plot(resultsPumpAdam$param, type="l",
+     main="pump", xlab=expression(alpha), ylab=expression(beta))
+```
+
+The default option is Adam. One can change the method using the argument `method=...`.
+For example, suppose we want to apply the 1D sampling method. We set `method="ga1D`.
+
+```{r algorithm, results="hide"}
+resultsPump1Dsampling <- computeMLE(model=pump, 
+                                    paramNodes = paramNodesPump, 
+                                    paramInit=c(10, 10),
+                                    compiledFuns=compiledFunsPump,
+                                    method="ga1D")
+```
+
+The result agrees with what we get from Adam:
+```{r 1DResult}
+resultsPump1Dsampling$MLE
+```

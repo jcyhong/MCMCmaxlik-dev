@@ -394,5 +394,3 @@ pdf(paste0("legend_glmm_", 300, ".pdf"), width=12)
 legend <- g_legend(trajectoryPlot) 
 grid.draw(legend) 
 dev.off()
-
-

@@ -13,7 +13,7 @@
 #' @examples
 #' compileMLE()
 
-computeMLE <- function(model, paramNodes, method="fixed", paramInit=NULL,
+computeMLE <- function(model, paramNodes, method="adam", paramInit=NULL,
                        compiledFuns=NULL, ...) {
   if(is.null(paramInit)) {
     paramInit <- rep(1, length(paramNodes))

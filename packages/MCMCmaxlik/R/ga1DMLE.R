@@ -109,16 +109,19 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
                "\n"))
     cat(paste0("Effective Sample Size for 1D sampling: ", 
                effSizes[iter], "\n"))
+    
+    iter <- iter + 1
+    
     # Convergence test
     if (iter > 2 * blockSize) {
       # 1. Check oscillating behaviors.
-      runsResults <- checkRuns(paramMatrix[(iter - blockSize + 1):iter, ],
+      runsResults <- checkRuns(paramMatrix[(iter - blockSize):(iter - 1), ],
                                runsThreshold)
       if (runsResults$pass) {
         # 2. Check whether the average stays constant.
         blockResults <- checkBlocks(
-          paramMatrix[(iter - 2 * blockSize + 1):(iter - blockSize), ],
-          paramMatrix[(iter - blockSize + 1):iter, ],
+          paramMatrix[(iter - 2 * blockSize):(iter - blockSize - 1), ],
+          paramMatrix[(iter - blockSize):(iter - 1), ],
           pValThreshold)
         if (blockResults$pass) {
           converge <- T
@@ -126,21 +129,30 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
         }
       }
     }
-    iter <- iter + 1
   }
+  
+  paramMatrix <- na.omit(paramMatrix)
+  if (iter > 20) {
+    MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
+  } else {
+    MLE <- tail(paramMatrix, 1)[1,]
+  }
+  
   
   if (returnHess) {
     approxHessian <- compiledFuns$computeHess$run(1e-4, postMode, burninFrac)
     return(list(param=na.omit(paramMatrix),
-                iter=iter, 
+                iter=iter - 1, 
                 effSizes=effSizes,
                 effSizesGrad=effSizesGrad,
-                hess=approxHessian))
+                hess=approxHessian,
+                MLE=MLE))
   }
   return(list(param=na.omit(paramMatrix),
-              iter=iter, 
+              iter=iter - 1, 
               effSizes=effSizes,
-              effSizesGrad=effSizesGrad))
+              effSizesGrad=effSizesGrad,
+              MLE=MLE))
 }
 
 getKernelMode <- function(samples, adjust=1, kern="gaussian", bdwth="nrd0") {

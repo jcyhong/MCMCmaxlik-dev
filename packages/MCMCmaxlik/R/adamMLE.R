@@ -109,16 +109,18 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
                  "\n")) 
     }
     
+    iter <- iter + 1
+    
     # Convergence test
     if (iter > 2 * blockSize) {
       # 1. Check oscillating behaviors.
-      runsResults <- checkRuns(paramMatrix[(iter - blockSize + 1):iter, ],
+      runsResults <- checkRuns(paramMatrix[(iter - blockSize):(iter - 1), ],
                             runsThreshold)
       if (runsResults$pass) {
         # 2. Check whether the average stays constant.
         blockResults <- checkBlocks(
-          paramMatrix[(iter - 2 * blockSize + 1):(iter - blockSize), ],
-          paramMatrix[(iter - blockSize + 1):iter, ],
+          paramMatrix[(iter - 2 * blockSize):(iter - blockSize - 1), ],
+          paramMatrix[(iter - blockSize):(iter - 1), ],
           pValThreshold)
         if (blockResults$pass) {
           converge <- T
@@ -126,7 +128,6 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
         }
       }
     }
-    iter <- iter + 1
   }
   
   if (iter > 2 * blockSize) {
@@ -147,11 +148,20 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
     }
   }
   
-  if (trackEffSizeGrad) {
-    results <- list(param = na.omit(paramMatrix), iter = iter, 
-                    effSizesGrad = effSizesGrad)
+  paramMatrix <- na.omit(paramMatrix)
+  if (iter > 20) {
+    MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
   } else {
-    results <- list(param = na.omit(paramMatrix), iter = iter)
+    MLE <- tail(paramMatrix, 1)[1,]
+  }
+  
+  if (trackEffSizeGrad) {
+    results <- list(param = paramMatrix, iter = iter - 1, 
+                    effSizesGrad = effSizesGrad,
+                    MLE = MLE)
+  } else {
+    results <- list(param = paramMatrix, iter = iter - 1,
+                    MLE = MLE)
   }
   return(results)
 }
