@@ -64,16 +64,11 @@ First we can try different step sizes for the fixed step size approach.
 ```{r algL, results="hide" }
 resultsLogRegfixedL <- computeMLE(model=logreg, 
                                     paramNodes = paramNodesLogreg, 
-                                    paramInit=c(10, 10),
+                                    paramInit=c(0, 0, 1),
                                     compiledFuns=compiledFunsLogReg,
                                     stepsize=.5,
                                     method="fixed")
 
-# Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# longer object length is not a multiple of shorter object lengthError in paramMatrix[iter + 1, ] <- thetaNew : 
-#   number of items to replace is not a multiple of replacement length
 ```
 
 
@@ -81,16 +76,12 @@ resultsLogRegfixedL <- computeMLE(model=logreg,
 ```{r algS, results="hide" }
 resultsLogRegfixedS <- computeMLE(model=logreg, 
                                     paramNodes = paramNodesLogreg, 
-                                    paramInit=c(10, 10),
+                                    paramInit=c(0, 0, 1),
                                     compiledFuns=compiledFunsLogReg,
                                     stepsize=.005,
                                     method="fixed")
 
-# Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# longer object length is not a multiple of shorter object lengthError in paramMatrix[iter + 1, ] <- thetaNew : 
-#   number of items to replace is not a multiple of replacement length
+
 ```
 
 ```{r fixedResult}
@@ -105,17 +96,11 @@ Now we can compare the default settings for the number of MCMC samples for both 
 ```{r algorithm, results="hide"}
 resultsLogReg1Dsampling <- computeMLE(model=logreg, 
                                     paramNodes = paramNodesLogreg, 
-                                    paramInit=c(10, 10),
+                                    paramInit=c(0, 0, 1),
                                     compiledFuns=compiledFunsLogReg,
                                     method="ga1D")
 
-# Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# longer object length is not a multiple of shorter object lengthError in paramMatrix[iter + 1, ] <- thetaCurr : 
-#   number of items to replace is not a multiple of replacement length
+
 ```
 
 %% need to plot this
@@ -125,17 +110,11 @@ Now let's see what happens when we decrease the number of MCMC samples in the gr
 ```{r algorithm2, results="hide"}
 resultsLogReg1DsamplingSL <- computeMLE(model=logreg, 
                                     paramNodes = paramNodesLogreg, 
-                                    paramInit=c(10, 10),
+                                    paramInit=c(0, 0, 1),
                                     compiledFuns=compiledFunsLogReg,
                                     numMCMCSamples=100, numMCMCSamples1D=300,
                                     method="ga1D")
-# Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# longer object length is not a multiple of shorter object lengthError in paramMatrix[iter + 1, ] <- thetaCurr : 
-#   number of items to replace is not a multiple of replacement length
+
 ```
 
 Alternatively, let's see what happens when we decrease the number of MCMC samples in the 1D sampling step. We would expect this to do worse than above.
@@ -143,18 +122,12 @@ Alternatively, let's see what happens when we decrease the number of MCMC sample
 ```{r algorithm3, results="hide"}
 resultsLogReg1DsamplingLS <- computeMLE(model=logreg, 
                                     paramNodes = paramNodesLogreg, 
-                                    paramInit=c(10, 10),
+                                    paramInit=c(0, 0, 1),
                                     compiledFuns=compiledFunsLogReg,
                                     numMCMCSamples=300, numMCMCSamples1D=100,
                                     method="ga1D")
 
-# Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# longer object length is not a multiple of shorter object lengthError in paramMatrix[iter + 1, ] <- thetaCurr : 
-#   number of items to replace is not a multiple of replacement length
+
 ```
 
 ```{r 1DResult}
