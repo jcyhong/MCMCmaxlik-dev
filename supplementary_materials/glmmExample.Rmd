@@ -94,63 +94,46 @@ Default Parameters for Adagrad: delta = 1e-04, eps = 1e-2
 Default Paramters for Adam: beta1=0.9, beta2=0.999
 
 ```{r algorithm1D, results="hide"}
-resultsGLMMadadeltaDefault <- computeMLE(model=logreg, 
-                                    paramNodes = paramNodesLogreg, 
-                                    paramInit=c(10, 10),
-                                    compiledFuns=compiledFunsLogReg,
+resultsGLMMadadeltaDefault <- computeMLE(model=glmmMod, 
+                                    paramNodes = glmmParamNodes, 
+                                    paramInit=rep(2, 6),
+                                    compiledFuns=compiledFunsGlmm,
                                     method="adadelta")
 
-# Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# longer object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object length[1] -0.3131166 -0.3095830  0.1766880
-# [1]  9.686883  9.690417 10.176688
-# longer object length is not a multiple of shorter object lengthError in paramMatrix[iter + 1, ] <- thetaNew : 
-#   number of items to replace is not a multiple of replacement length
 ```
 
 
 ```{r algorithm2D, results="hide"}
-resultsGLMMadamDefault<- computeMLE(model=logreg, 
-                                    paramNodes = paramNodesLogreg, 
-                                    paramInit=c(10, 10),
-                                    compiledFuns=compiledFunsLogReg,
+resultsGLMMadamDefault<- computeMLE(model=glmmMod, 
+                                    paramNodes = glmmParamNodes, 
+                                    paramInit=rep(2, 6),
+                                    compiledFuns=compiledFunsGlmm,
                                     method="adam")
 
-# Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!
-# longer object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object lengthError in paramMatrix[iter + 1, ] <- thetaNew : 
-#   number of items to replace is not a multiple of replacement length
+
 ```
 
 Now let's change some parameters.
 
 ```{r algorithm1, results="hide"}
-resultsGLMMadadelta <- computeMLE(model=logreg, 
-                                    paramNodes = paramNodesLogreg, 
-                                    paramInit=c(10, 10),
-                                    compiledFuns=compiledFunsLogReg,
-                                    method="adadelta",delta=1e-03,eps=.1)
+resultsGLMMadadelta <- computeMLE(model=glmmMod, 
+                                    paramNodes = glmmParamNodes, 
+                                    paramInit=rep(2, 6),
+                                    compiledFuns=compiledFunsGlmm,
+                                    method="adadelta",delta=5e-04,eps=.1)
 
-# Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!
-# |-------------|-------------|-------------|-------------|
-# |-------------------------------------------------------|
-# longer object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object length[1] -0.9392501 -0.8957062  0.2105871
-# [1]  9.060750  9.104294 10.210587
-# longer object length is not a multiple of shorter object lengthError in paramMatrix[iter + 1, ] <- thetaNew : 
-#   number of items to replace is not a multiple of replacement length
+
 ```
 
 
 ```{r algorithm2, results="hide"}
-resultsGLMMadam<- computeMLE(model=logreg, 
-                                    paramNodes = paramNodesLogreg, 
-                                    paramInit=c(10, 10),
-                                    compiledFuns=compiledFunsLogReg,
+resultsGLMMadam<- computeMLE(model=glmmMod, 
+                                    paramNodes = glmmParamNodes, 
+                                    paramInit=rep(2, 6),
+                                    compiledFuns=compiledFunsGlmm,
                                     method="adam",beta1=.8,beta2=0.99)
 
-# Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!
-# longer object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object lengthlonger object length is not a multiple of shorter object lengthError in paramMatrix[iter + 1, ] <- thetaNew : 
-#   number of items to replace is not a multiple of replacement length
+
 ```
 
 How do we do?
