@@ -66,8 +66,9 @@ resultsLogRegfixedL <- computeMLE(model=logreg,
                                     paramNodes = paramNodesLogreg, 
                                     paramInit=c(0, 0, 1),
                                     compiledFuns=compiledFunsLogReg,
-                                    stepsize=.5,
+                                    stepsize=.05,
                                     method="fixed")
+names(resultsLogRegfixedL)
 
 ```
 
@@ -87,9 +88,11 @@ resultsLogRegfixedS <- computeMLE(model=logreg,
 ```{r fixedResult}
 resultsLogRegfixedL$MLE
 resultsLogRegfixedS$MLE
+
+resultsLogRegfixedL$iter
+resultsLogRegfixedS$iter
 ```
 
-%% get number of iterations
 
 Now we can compare the default settings for the number of MCMC samples for both the gradient estimation and the 1D sampling step (numMCMCSamples=300, numMCMCSamples1D=300) with other choices of sample size for the 1D sampling method.
 
@@ -103,7 +106,14 @@ resultsLogReg1Dsampling <- computeMLE(model=logreg,
 
 ```
 
-%% need to plot this
+
+```{r 1DsampFig}
+par(mfrow=c(3,1))
+plot(resultsLogReg1Dsampling$param[,1],type="l",xlab="iter",ylab="beta0")
+plot(resultsLogReg1Dsampling$param[,2],type="l",xlab="iter",ylab="beta1")
+plot(resultsLogReg1Dsampling$param[,3],type="l",xlab="iter",ylab="sigma_RE")
+
+```
 
 Now let's see what happens when we decrease the number of MCMC samples in the gradient estimation step.
 
@@ -114,6 +124,14 @@ resultsLogReg1DsamplingSL <- computeMLE(model=logreg,
                                     compiledFuns=compiledFunsLogReg,
                                     numMCMCSamples=100, numMCMCSamples1D=300,
                                     method="ga1D")
+
+```
+
+```{r 1DsampFig2}
+par(mfrow=c(3,1))
+plot(resultsLogReg1DsamplingSL$param[,1],type="l",xlab="iter",ylab="beta0")
+plot(resultsLogReg1DsamplingSL$param[,2],type="l",xlab="iter",ylab="beta1")
+plot(resultsLogReg1DsamplingSL$param[,3],type="l",xlab="iter",ylab="sigma_RE")
 
 ```
 
@@ -130,12 +148,19 @@ resultsLogReg1DsamplingLS <- computeMLE(model=logreg,
 
 ```
 
+```{r 1DsampFig3}
+par(mfrow=c(3,1))
+plot(resultsLogReg1DsamplingLS$param[,1],type="l",xlab="iter",ylab="beta0")
+plot(resultsLogReg1DsamplingLS$param[,2],type="l",xlab="iter",ylab="beta1")
+plot(resultsLogReg1DsamplingLS$param[,3],type="l",xlab="iter",ylab="sigma_RE")
+
+```
+
 ```{r 1DResult}
 resultsLogReg1Dsampling$MLE
 resultsLogReg1DsamplingSL$MLE
 resultsLogReg1DsamplingLS$MLE
 ```
 
-
-%% make plots for this
+Here we see that the results remain fairly robust to decreases in both the number of MCMC samples for the gradient calculation and for the 1D sampling, although decreasing the 1D sampling sample size yields results further from those of the default parameters. 
 
