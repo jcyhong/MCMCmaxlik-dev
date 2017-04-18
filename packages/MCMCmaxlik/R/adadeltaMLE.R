@@ -42,6 +42,7 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
   thetaCur <- paramInit
   thetaNew <- paramInit
   iter <- 1
+  converge <- F
   thr <- Inf
   paramMatrix <- matrix(nrow = maxIter + 1, ncol = length(paramInit))
   if (trackEffSizeGrad) {
@@ -135,11 +136,20 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
     }
   }
   
-  if (trackEffSizeGrad) {
-    results <- list(param = na.omit(paramMatrix), iter = iter, 
-                    effSizesGrad = effSizesGrad)
+  paramMatrix <- na.omit(paramMatrix)
+  if (iter > 20) {
+    MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
   } else {
-    results <- list(param = na.omit(paramMatrix), iter = iter)
+    MLE <- tail(paramMatrix, 1)[1,]
+  }
+  
+  if (trackEffSizeGrad) {
+    results <- list(param = paramMatrix, iter = iter - 1, 
+                    effSizesGrad = effSizesGrad,
+                    MLE = MLE)
+  } else {
+    results <- list(param = paramMatrix, iter = iter - 1,
+                    MLE = MLE)
   }
   return(results)
 }
