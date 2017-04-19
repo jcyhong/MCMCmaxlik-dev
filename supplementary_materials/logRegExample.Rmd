@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Now we will explore a more realistic scenario and show how to change some of the default parameters. 
 
-```{r}
+```{r,messages=F,results="hide"}
 library("MCMCmaxlik")
 ```
 
@@ -73,17 +73,20 @@ names(resultsLogRegfixedL)
 ```
 
 
+Because we use a smaller step size, we would expect to need more iterations to converge, so we change the default version of maxIter from 100 to 500.
 
 ```{r algS, results="hide" }
 resultsLogRegfixedS <- computeMLE(model=logreg, 
                                     paramNodes = paramNodesLogreg, 
                                     paramInit=c(0, 0, 1),
                                     compiledFuns=compiledFunsLogReg,
-                                    stepsize=.005,
+                                    stepsize=.005,maxIter=500,
                                     method="fixed")
 
 
 ```
+
+Here we see that the smaller fixed step size is more appropriate for this example (see the results of the 1D sampling approach for comparison).
 
 ```{r fixedResult}
 resultsLogRegfixedL$MLE
@@ -110,8 +113,11 @@ resultsLogReg1Dsampling <- computeMLE(model=logreg,
 ```{r 1DsampFig}
 par(mfrow=c(3,1))
 plot(resultsLogReg1Dsampling$param[,1],type="l",xlab="iter",ylab="beta0")
+abline(h=resultsLogReg1Dsampling$MLE[1],col="red")
 plot(resultsLogReg1Dsampling$param[,2],type="l",xlab="iter",ylab="beta1")
+abline(h=resultsLogReg1Dsampling$MLE[2],col="red")
 plot(resultsLogReg1Dsampling$param[,3],type="l",xlab="iter",ylab="sigma_RE")
+abline(h=resultsLogReg1Dsampling$MLE[3],col="red")
 
 ```
 
@@ -130,8 +136,11 @@ resultsLogReg1DsamplingSL <- computeMLE(model=logreg,
 ```{r 1DsampFig2}
 par(mfrow=c(3,1))
 plot(resultsLogReg1DsamplingSL$param[,1],type="l",xlab="iter",ylab="beta0")
+abline(h=resultsLogReg1DsamplingSL$MLE[1],col="red")
 plot(resultsLogReg1DsamplingSL$param[,2],type="l",xlab="iter",ylab="beta1")
+abline(h=resultsLogReg1DsamplingSL$MLE[2],col="red")
 plot(resultsLogReg1DsamplingSL$param[,3],type="l",xlab="iter",ylab="sigma_RE")
+abline(h=resultsLogReg1DsamplingSL$MLE[3],col="red")
 
 ```
 
@@ -151,8 +160,11 @@ resultsLogReg1DsamplingLS <- computeMLE(model=logreg,
 ```{r 1DsampFig3}
 par(mfrow=c(3,1))
 plot(resultsLogReg1DsamplingLS$param[,1],type="l",xlab="iter",ylab="beta0")
+abline(h=resultsLogReg1DsamplingLS$MLE[1],col="red")
 plot(resultsLogReg1DsamplingLS$param[,2],type="l",xlab="iter",ylab="beta1")
+abline(h=resultsLogReg1DsamplingLS$MLE[2],col="red")
 plot(resultsLogReg1DsamplingLS$param[,3],type="l",xlab="iter",ylab="sigma_RE")
+abline(h=resultsLogReg1DsamplingLS$MLE[3],col="red")
 
 ```
 
