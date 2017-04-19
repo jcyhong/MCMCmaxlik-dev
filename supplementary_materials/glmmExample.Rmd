@@ -136,7 +136,7 @@ resultsGLMMadam<- computeMLE(model=glmmMod,
 
 ```
 
-How do we do?
+How do we do? We can see that the default parameters yield more consistent results between AdaDelta and Adam, and that the results for this example are sensitive to the tuning parameters of these methods. The default values we implement are those used by the creators of AdaDelta and Adam, and we recommend sticking with these.
 
 ```{r 1DResult}
 resultsGLMMadadeltaDefault$MLE
