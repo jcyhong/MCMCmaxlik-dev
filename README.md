@@ -26,9 +26,9 @@ install("MCMCmaxlik")
 
 ## Authors
 
-* **Perry de Valpine**  - [Website](https://nature.berkeley.edu/~pdevalpine/)
 * **Johnny Hong**  - [Website](https://jcyhong.github.io/)
 * **Sara Stoudt** - [Website](https://www.stat.berkeley.edu/~sstoudt/)
+* **Perry de Valpine**  - [Website](https://nature.berkeley.edu/~pdevalpine/)
 
 ## License
 
