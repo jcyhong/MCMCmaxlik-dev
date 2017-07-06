@@ -34,4 +34,4 @@ install("MCMCmaxlik")
 
 ## Acknowledgments
 
-This project started as a class project for Chris Paciorek's Bayesian Statistics class at UC Berkeley and was inspired by Perry de Valpine's idea to combine Fisher's identity with finite element approximation to estimate the gradient, as well as apply a one-dimensional sampler to estimate the step size. Perry has helped us work through some of the details coding in NIMBLE. We would like to thank Chris for his numerous suggestions along the way as well.
+We thank Chris Paciorek for his numerous suggestions in the project, in particular the idea of warm start in the MCMC sampling. We thank Nick Michaud for NIMBLE's implementation of MCEM. The second author is supported by a  National Physical Sciences Consortium fellowship. 
