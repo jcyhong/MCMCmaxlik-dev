@@ -30,8 +30,6 @@ install("MCMCmaxlik")
 * **Sara Stoudt** - [Website](https://www.stat.berkeley.edu/~sstoudt/)
 * **Perry de Valpine**  - [Website](https://nature.berkeley.edu/~pdevalpine/)
 
-## License
-
 ## Acknowledgments
 
 We thank Chris Paciorek for his numerous suggestions in the project, in particular the idea of warm start in the MCMC sampling. We thank Nick Michaud for NIMBLE's implementation of MCEM. The second author is supported by a  National Physical Sciences Consortium fellowship. 
