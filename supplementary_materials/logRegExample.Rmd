@@ -174,5 +174,4 @@ resultsLogReg1DsamplingSL$MLE
 resultsLogReg1DsamplingLS$MLE
 ```
 
-Here we see that the results remain fairly robust to decreases in both the number of MCMC samples for the gradient calculation and for the 1D sampling, although decreasing the 1D sampling sample size yields results further from those of the default parameters. 
-
+Here we see that the results remain fairly robust to decreases in both the number of MCMC samples for the gradient calculation and for the 1D sampling.

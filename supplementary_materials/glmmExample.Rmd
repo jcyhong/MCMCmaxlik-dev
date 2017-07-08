@@ -87,11 +87,11 @@ First, we compile the algorithms in NIMBLE using `buildMCMCmaxlik()`.
 compiledFunsGlmm <- buildMCMCmaxlik(glmmMod, glmmParamNodes)
 ```
 
-Then we can run the algorithms using `computeMLE()`. For Adadelta and Adam we use the default settings used by the creators of these step size schedules, but we do allow the user to change these as desired. We want to give flexibility for those who have experience with these algorithms in other contexts and may want to customize our impelmentations to fit their needs. 
+Then we can run the algorithms using `computeMLE()`. For Adadelta and Adam we use the default settings used by the creators of these step size schedules, but we do allow the user to change these as desired. We want to give flexibility for those who have experience with these algorithms in other contexts and may want to customize our implementations to fit their needs. 
 
-Default Parameters for Adagrad: delta = 1e-04, eps = 1e-2
+Default Parameters for Adadelta: delta = 1e-04, eps = 1e-2
 
-Default Paramters for Adam: beta1=0.9, beta2=0.999
+Default Parameters for Adam: beta1=0.9, beta2=0.999
 
 ```{r algorithm1D, results="hide"}
 resultsGLMMadadeltaDefault <- computeMLE(model=glmmMod, 

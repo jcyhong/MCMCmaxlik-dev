@@ -69,7 +69,7 @@ plot(resultsPumpAdam$param, type="l",
 ```
 
 The default option is Adam. One can change the method using the argument `method=...`.
-For example, suppose we want to apply the 1D sampling method. We set `method="ga1D`.
+For example, suppose we want to apply the 1D sampling method. We set `method="ga1D"`.
 
 ```{r algorithm, results="hide"}
 resultsPump1Dsampling <- computeMLE(model=pump, 

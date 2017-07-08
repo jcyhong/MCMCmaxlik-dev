@@ -61,8 +61,8 @@ resultsPumpFixed <- computeMLE(pump, paramNodesPump,
                                boundary=boundary)
 timePumpFixed <- proc.time() - ptm
 timePumpFixed ##  4.475 
-mean(tail(resultsPumpFixed$param[, 1], 20), trim=.2) ## 0.8221844
-mean(tail(resultsPumpFixed$param[, 2], 20), trim=.2) ## 1.260489
+mean(tail(resultsPumpFixed$param[, 1], 20), trim=.2) ## 0.8241004
+mean(tail(resultsPumpFixed$param[, 2], 20), trim=.2) ## 1.265609
 save(resultsPumpFixed, file="pumpFixed.RData")
 
 # 2. Small fixed step size ----------------------------------------
@@ -76,8 +76,8 @@ resultsPumpSmallFixed <- computeMLE(pump, paramNodesPump,
                                     boundary=boundary)
 timePumpSmallFixed <- proc.time() - ptm
 timePumpSmallFixed ## 46.134 
-mean(tail(resultsPumpSmallFixed$param[, 1], 20), trim=.2) ## 0.8230727
-mean(tail(resultsPumpSmallFixed$param[, 2], 20), trim=.2) ## 1.262879
+mean(tail(resultsPumpSmallFixed$param[, 1], 20), trim=.2) ## 0.8225081
+mean(tail(resultsPumpSmallFixed$param[, 2], 20), trim=.2) ## 1.260764
 save(resultsPumpSmallFixed, file="pumpSmallFixed.RData")
 
 # 3. Adadelta ----------------------------------------
@@ -90,8 +90,8 @@ resultsPumpAdadelta <- computeMLE(pump, paramNodesPump,
                                   boundary=boundary)
 timePumpAdadelta <- proc.time() - ptm
 timePumpAdadelta ## 3.023 
-mean(tail(resultsPumpAdadelta$param[, 1], 20), trim=.2) ## 1.054878
-mean(tail(resultsPumpAdadelta$param[, 2], 20), trim=.2) ## 1.811111
+mean(tail(resultsPumpAdadelta$param[, 1], 20), trim=.2) ## 1.067941
+mean(tail(resultsPumpAdadelta$param[, 2], 20), trim=.2) ## 1.83198
 save(resultsPumpAdadelta, file="pumpAdadelta.RData")
 
 # 4. Adam ----------------------------------------
@@ -104,8 +104,8 @@ resultsPumpAdam <- computeMLE(pump, paramNodesPump,
                               boundary=boundary)
 timePumpAdam <- proc.time() - ptm
 timePumpAdam ## 2.975 
-mean(tail(resultsPumpAdam$param[, 1], 20), trim=.2) ## 0.8222032
-mean(tail(resultsPumpAdam$param[, 2], 20), trim=.2) ## 1.260498
+mean(tail(resultsPumpAdam$param[, 1], 20), trim=.2) ## 0.8269116
+mean(tail(resultsPumpAdam$param[, 2], 20), trim=.2) ## 1.2745
 save(resultsPumpAdam, file="pumpAdam.RData")
 
 # 5. Newton-Raphson ----------------------------------------
@@ -119,8 +119,8 @@ resultsPumpNR <- computeMLE(pump, paramNodes=paramNodesPump,
                             boundary=boundary)
 timePumpNR <- proc.time() - ptm
 timePumpNR ## 3.201 
-mean(resultsPumpNR$param[201:300,1], trim=.2) ## 7256.679
-mean(resultsPumpNR$param[201:300,2], trim=.2) ## 8739.564
+mean(resultsPumpNR$param[201:300,1], trim=.2) ## 7852.135
+mean(resultsPumpNR$param[201:300,2], trim=.2) ## 10000
 save(resultsPumpNR, file="pumpNR.RData")
 
 # 6. 1-D sampling ----------------------------------------
@@ -132,8 +132,8 @@ resultsPump1D <- computeMLE(pump, paramNodesPump,
                             maxIter=300)
 timePump1D <- proc.time() - ptm
 timePump1D ## 10.838 
-mean(tail(resultsPump1D$param[, 1], 20), trim=.2) ## 0.8666035
-mean(tail(resultsPump1D$param[, 2], 20), trim=.2) ## 1.330581
+mean(tail(resultsPump1D$param[, 1], 20), trim=.2) ## 0.8512918
+mean(tail(resultsPump1D$param[, 2], 20), trim=.2) ## 1.301793
 save(resultsPump1D, file="pump1D.RData")
 
 # 7. Hybrid
@@ -150,12 +150,10 @@ resultsPumpAdamSecond <- computeMLE(pump, paramNodesPump,
                                     paramInit=tail(resultsPump1DFirst$param, 1),
                                     compiledFuns=compiledFunsPump,
                                     numMCMCSamples=numMCMCSamples,
-                                    stepsize=0.3,
-                                    eps=1e-4,
                                     maxIter=300,
                                     boundary=boundary)
-mean(tail(resultsPumpAdamSecond$param[, 1], 20), trim=.2) ## 0.8666035
-mean(tail(resultsPumpAdamSecond$param[, 2], 20), trim=.2) ## 1.330581
+mean(tail(resultsPumpAdamSecond$param[, 1], 20), trim=.2) ## 0.8230988
+mean(tail(resultsPumpAdamSecond$param[, 2], 20), trim=.2) ## 1.260072
 timePumpHybrid <- proc.time() - ptm
 timePumpHybrid
 
