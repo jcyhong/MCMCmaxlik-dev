@@ -64,9 +64,9 @@ resultsLogregFixed <- computeMLE(logreg, paramNodesLogreg,
                                  maxIter=300,
                                  boundary=boundary)
 timeLogRegFixed <- proc.time() - ptm ##  2.508 
-mean(resultsLogregFixed$param[201:300,1], trim=.2)  ## -0.7522742
-mean(resultsLogregFixed$param[201:300,2], trim=.2)  ## 1.25159
-mean(resultsLogregFixed$param[201:300,3], trim=.2)  ## 0.8827718
+mean(tail(resultsLogregFixed$param[,1],20), trim=.2)  ## -0.7522742
+mean(tail(resultsLogregFixed$param[,2],20), trim=.2)  ## 1.25159
+mean(tail(resultsLogregFixed$param[,3],20), trim=.2)  ## 0.8827718
 save(resultsLogregFixed, file="logRegFixed.RData")
 
 # 2. Small fixed step size ----------------------------------------
@@ -79,9 +79,9 @@ resultsLogregSmallFixed <- computeMLE(logreg, paramNodesLogreg,
                                       maxIter=300,
                                       boundary=boundary)
 timeLogRegSmallFixed <- proc.time() - ptm ## 2.530 
-mean(resultsLogregSmallFixed$param[201:300,1], trim=.2)  ## -0.5485272
-mean(resultsLogregSmallFixed$param[201:300,2], trim=.2)  ##  1.310605
-mean(resultsLogregSmallFixed$param[201:300,3], trim=.2)  ## 0.251749
+mean(tail(resultsLogregSmallFixed$param[,1],20), trim=.2)  ## -0.5485272
+mean(tail(resultsLogregSmallFixed$param[,2],20), trim=.2)  ##  1.310605
+mean(tail(resultsLogregSmallFixed$param[,3],20), trim=.2)  ## 0.251749
 save(resultsLogregSmallFixed, file="logRegSmallFixed.RData")
 
 # 3. Adadelta ----------------------------------------
@@ -123,9 +123,9 @@ resultsLogregNR <- computeMLE(logreg, paramNodesLogreg,
                               maxIter=300,
                               boundary=boundary)
 timeLogRegNR <- proc.time() - ptm ##  5.790 
-mean(resultsLogregNR$param[201:300,1], trim=.2) ## 0.6831159
-mean(resultsLogregNR$param[201:300,2], trim=.2) ## -1.625356
-mean(resultsLogregNR$param[201:300,3], trim=.2) ## 10 (boundary)
+mean(tail(resultsLogregNR$param[,1],20), trim=.2) ## 0.6831159
+mean(tail(resultsLogregNR$param[,2],20), trim=.2) ## -1.625356
+mean(tail(resultsLogregNR$param[,3],20), trim=.2) ## 10 (boundary)
 ## stuck at these values from iteration 74 on
 save(resultsLogregNR, file="logRegNR.RData")
 
@@ -174,4 +174,63 @@ timeInfo=cbind(c(timeLogRegFixed, timeLogRegSmallFixed, timeLogRegAdadelta,
 
 write.csv(timeInfo,"timeLogReg.csv",row.names=F)
 
+## 
+r=c(10, 23, 23, 26, 17, 5, 53, 55, 32, 46)
+n=c(39, 62, 81, 51, 39, 6, 74, 72, 51, 79)
+x=c(0,  0,  0,  0,  0,  1, 1,  1,  1,  1)
+
+
+xlong<-c()
+rlong<-c()
+indiv<-c()
+
+for(i in 1:length(r)){
+  xlong=c(xlong,rep(x[i],n[i]))
+  rlong<-c(rlong,rep(1,r[i]),rep(0,n[i]-r[i]))
+  indiv<-c(indiv,rep(i,n[i]))
+}
+
+data=cbind.data.frame(xlong,rlong,indiv)
+
+require(lme4)
+ptm <- proc.time()
+gmre=glmer(rlong~xlong+(1|indiv),family=binomial(),data=data)
+glmmTime <- proc.time() - ptm ##  0.093 
+
+summary(gmre)
+
+# Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+# Family: binomial  ( logit )
+# Formula: rlong ~ xlong + (1 | indiv)
+# Data: data
+# 
+# AIC      BIC   logLik deviance df.resid 
+# 715.2    728.2   -354.6    709.2      551 
+# 
+# Scaled residuals: 
+#   Min      1Q  Median      3Q     Max 
+# -1.6091 -0.7639  0.6215  0.7669  1.4491 
+# 
+# Random effects:
+#   Groups Name        Variance Std.Dev.
+# indiv  (Intercept) 0.06184  0.2487  
+# Number of obs: 554, groups:  indiv, 10
+# 
+# Fixed effects:
+#   Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)  -0.5483     0.1703  -3.220  0.00128 ** 
+#   xlong         1.3104     0.2460   5.326    1e-07 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Correlation of Fixed Effects:
+#   (Intr)
+# xlong -0.691
+# 
+# 
+
+
+#beta0: -0.5483
+#beta1: 1.3104     
+#sigma_RE: 0.2487  
 
