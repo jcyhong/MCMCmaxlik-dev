@@ -1,0 +1,242 @@
+---
+title: "stochVolatilityExample"
+author: "Sara Stoudt"
+date: "September 16, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("MCMCmaxlik")
+```
+
+```{r}
+svCode <- nimbleCode({
+ ut ~ dnorm(0,1)
+ etat ~ dnorm(0,sd=sigmaEta)
+  h[1] <- 0
+  y[1] ~ ut*exp(h[1]/2)
+  for (i in 2:T) {
+    h[i] ~ mu+phi*(h[i-1]-mu)+etat
+    y[i] ~ ut*exp(h[i]/2)
+  }
+  phi ~dunif(-.999,0.999)
+  mu ~ dnorm(0, sd = 1000)
+  sigmaEta~dunif(0, 1000)
+})
+
+Consts <- list(T = 50)
+
+## build the model object
+svModel <- nimbleModel(svCode, constants = Consts)
+
+# defining model...
+# Registering the following user-provided distributions: * .
+#  Show Traceback
+# Error in FUN(X[[i]], ...) : checkDistributionFunctions: density function for * is not available as a nimbleFunction without setup code.
+
+
+## put values in the top-level parameters
+svModel$phi <- 0.5
+svModel$mu <- 2.0
+sigmaEta <- 2.0
+
+## calculate any dependencies that may be needed to simulate states and data
+svModel$calculate(svModel$getDependencies( c('rho','mu','sigPN','sigOE'), determOnly = TRUE))
+
+
+## use the model to simulate states and data
+set.seed(12345)
+svModel$simulate( svModel$getDependencies(c('x','y')))
+## Look at what we got:
+svModel$x
+svModel$y
+svModel$setData('y')
+
+
+paramNodesSV <- svModel$getNodeNames(topOnly=T)
+CsvModel <- compileNimble(svModel)
+```
+
+```{r compile}
+compiledFunsSVmodel <- buildMCMCmaxlik(svModel, paramNodesSV)
+#Error in logScale & reflective : 
+#  operations are posvible only for numeric, logical or complex types
+```
+
+
+# Testing Algorithms
+
+```{r}
+# 1. Fixed step size ----------------------------------------
+# Compile the necesvary functions.
+
+init <- c(0.75,10,.1,.1)
+boundary <- list(c(-0.9999, 0.9999),c(-100000,100000),c(1e-04, 1),c(1e-04, 1))
+numMCMCSamples <- 300
+
+ptm <- proc.time()
+resultsSVModFixed <- computeMLE(svModel, paramNodesSV,
+                               method="fixed", paramInit=init,
+                               compiledFuns=compiledFunsSVmodel,
+                               stepsize=0.05,
+                               numMCMCSamples=numMCMCSamples,
+                               maxIter=500,
+                               boundary=boundary)
+timesSVModFixed <- proc.time() - ptm
+timesSVModFixed 
+mean(tail(resultsSVModFixed$param[, 1], 20), trim=.2) 
+mean(tail(resultsSVModFixed$param[, 2], 20), trim=.2) 
+mean(tail(resultsSVModFixed$param[, 3], 20), trim=.2) 
+save(resultsSVModFixed, file="svModFixed.RData")
+```
+
+```{r}
+# 2. Small fixed step size ----------------------------------------
+ptm <- proc.time()
+resultsSVModSmallFixed <- computeMLE(svModel, paramNodesSVMod,
+                                    method="fixed", paramInit=init,
+                                    compiledFuns=compiledFunsSVMod,
+                                    stepsize=0.005,
+                                    numMCMCSamples=numMCMCSamples,
+                                    maxIter=5000,
+                                    boundary=boundary)
+timesSVModSmallFixed <- proc.time() - ptm
+timesSVModSmallFixed 
+mean(tail(resultsSVModSmallFixed$param[, 1], 20), trim=.2) 
+mean(tail(resultsSVModSmallFixed$param[, 2], 20), trim=.2)
+mean(tail(resultsSVModSmallFixed$param[, 3], 20), trim=.2) 
+save(resultsSVModSmallFixed, file="svModSmallFixed.RData")
+```
+
+```{r}
+# 3. Adadelta ----------------------------------------
+ptm <- proc.time()
+resultsSVModAdadelta <- computeMLE(svModel, paramNodesSVMod,
+                                  method="adadelta", paramInit=init,
+                                  compiledFuns=compiledFunsSVMod,
+                                  numMCMCSamples=numMCMCSamples,
+                                  maxIter=300,
+                                  boundary=boundary)
+timesSVModAdadelta <- proc.time() - ptm
+timesSVModAdadelta 
+mean(tail(resultsSVModAdadelta$param[, 1], 20), trim=.2) 
+mean(tail(resultsSVModAdadelta$param[, 2], 20), trim=.2) 
+mean(tail(resultsSVModAdadelta$param[, 1], 20), trim=.2) 
+save(resultsSVModAdadelta, file="svModAdadelta.RData")
+
+```
+
+```{r}
+
+# 4. Adam ----------------------------------------
+ptm <- proc.time()
+resultsSVModAdam <- computeMLE(svModel, paramNodesSVMod,
+                              method="adam", paramInit=init,
+                              compiledFuns=compiledFunsSVMod,
+                              numMCMCSamples=numMCMCSamples,
+                              maxIter=300,
+                              boundary=boundary)
+timesSVModAdam <- proc.time() - ptm
+timesSVModAdam 
+mean(tail(resultsSVModAdam$param[, 1], 20), trim=.2) 
+mean(tail(resultsSVModAdam$param[, 2], 20), trim=.2) 
+mean(tail(resultsSVModAdam$param[, 3], 20), trim=.2) 
+save(resultsSVModAdam, file="svModAdam.RData")
+
+```
+
+```{r}
+# 5. Newton-Raphson ----------------------------------------
+ptm <- proc.time()
+resultsSVModNR <- computeMLE(svModel, paramNodes=paramNodesSVMod,
+                            method="NR", paramInit=init,
+                            compiledFuns=compiledFunsSVMod,
+                            numMCMCSamples=numMCMCSamples,
+                            tol=1e-20,
+                            maxIter=300,
+                            boundary=boundary)
+timesSVModNR <- proc.time() - ptm
+timesSVModNR 
+mean(resultsSVModNR$param[201:300,1], trim=.2)
+mean(resultsSVModNR$param[201:300,2], trim=.2) 
+mean(resultsSVModNR$param[201:300,3], trim=.2)
+save(resultsSVModNR, file="svModNR.RData")
+```
+
+```{r}
+# 6. 1-D sampling ----------------------------------------
+ptm <- proc.time()
+resultsSVMod1D <- computeMLE(svModel, paramNodesSVMod,
+                            method="ga1D", paramInit=init,
+                            compiledFuns=compiledFunsSVMod,
+                            numMCMCSamples=300, numMCMCSamples1D=300, 
+                            maxIter=300)
+timesSVMod1D <- proc.time() - ptm
+timesSVMod1D 
+mean(tail(resultsSVMod1D$param[, 1], 20), trim=.2) 
+mean(tail(resultsSVMod1D$param[, 2], 20), trim=.2) 
+mean(tail(resultsSVMod1D$param[, 3], 20), trim=.2) 
+save(resultsSVMod1D, file="svMod1D.RData")
+
+```
+
+
+```{r}
+# 7. Hybrid
+# Run 10 iterations of 1D, and then run Adam.
+ptm <- proc.time()
+resultsSVMod1DFirst <- computeMLE(svModel, paramNodesSVMod,
+                                 method="ga1D", paramInit=init,
+                                 compiledFuns=compiledFunsSVMod,
+                                 numMCMCSamples=numMCMCSamples, 
+                                 numMCMCSamples1D=300, 
+                                 maxIter=10)
+resultsSVModAdamSecond <- computeMLE(svModel, paramNodesSVMod,
+                                    method="adam", 
+                                    paramInit=tail(resultsSVMod1DFirst$param, 1),
+                                    compiledFuns=compiledFunsSVMod,
+                                    numMCMCSamples=numMCMCSamples,
+                                    maxIter=300,
+                                    boundary=boundary)
+timesSVModHybrid <- proc.time() - ptm
+timesSVModHybrid
+
+mean(tail(resultsSVModAdamSecond$param[, 1], 20), trim=.2) 
+mean(tail(resultsSVModAdamSecond$param[, 2], 20), trim=.2) 
+mean(tail(resultsSVModAdamSecond$param[, 3], 20), trim=.2) 
+
+```
+
+```{r}
+# MCEM -----------------------------
+#source("MCEM_with_output.R")
+svMod2 <- svModel$newModel()
+
+box <- list(list(c('sigmaEta'), c(0, 1000)),list(c("phi"),c(-0.9999, 0.9999)),list(c("mu"),c(-Inf,Inf)))
+svModMCEM <- buildMCEM(model=svMod2, latentNodes='x[1:100]',
+                      boxConstraints=box) #theta0=c(0.75,10,.1,.1)
+## If I don't use the hacky version, this compiles, but then...
+
+ptm <- proc.time()
+resultsSVModMCEM <- svModMCEM() #Error: could not find function "svModMCEM"
+timesSVModMCEM <- proc.time() - ptm
+timesSVModMCEM 
+
+# Save outputs ------------------------
+save(resultsSVModMCEM, file="MCEM_svMod.RData")
+```
+
+```{r}
+timeInfo <- cbind(c(timesSVModFixed, timesSVModSmallFixed,
+                    timesSVModAdadelta, timesSVModAdam,
+                    timesSVModNR, timesSVMod1D, timesSVModMCEM),
+                  c("fixed", "smallFixed", "adadelta", "adam",
+                    "NR", "1D", "mcem"))
+
+write.csv(timeInfo, "timesSVMod.csv", row.names=F)
+
+```

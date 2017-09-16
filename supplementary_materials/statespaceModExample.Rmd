@@ -1,0 +1,243 @@
+---
+title: "stateSpaceModExample"
+author: "Sara Stoudt"
+date: "September 16, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("MCMCmaxlik")
+```
+
+```{r}
+ssCode <- nimbleCode({
+  rho ~ dunif(-0.9999, 0.9999)
+  mu ~ dnorm(0, sd = 1000)
+  sigPN ~ dunif(1e-04, 1)
+  sigOE ~ dunif(1e-04, 1)
+  x[1] ~ dnorm(mu, sd = sqrt(sigPN^2/(1-rho*rho)))
+  y[1] ~ dnorm(x[1], sd = sigOE)
+  for (i in 2:T) {
+    x[i] ~ dnorm(rho * (x[i - 1] - mu) + mu, sd = sigPN)
+    y[i] ~ dnorm(x[i], sd = sigOE)
+  }
+})
+
+Consts <- list(T = 100)
+
+## build the model object
+ssModel <- nimbleModel(ssCode, constants = Consts)
+
+## put values in the top-level parameters
+ssModel$rho <- 0.5
+ssModel$mu <- 5.0
+ssModel$sigPN <- 0.05
+ssModel$sigOE <- 0.05
+
+## calculate any dependencies that may be needed to simulate states and data
+ssModel$calculate(ssModel$getDependencies( c('rho','mu','sigPN','sigOE'), determOnly = TRUE))
+
+
+## use the model to simulate states and data
+set.seed(12345)
+ssModel$simulate( ssModel$getDependencies(c('x','y')))
+## Look at what we got:
+ssModel$x
+ssModel$y
+ssModel$setData('y')
+
+
+paramNodesSS <- ssModel$getNodeNames(topOnly=T)
+CssModel <- compileNimble(ssModel)
+```
+
+```{r compile}
+compiledFunsSSmodel <- buildMCMCmaxlik(ssModel, paramNodesSS)
+#Error in logScale & reflective : 
+#  operations are possible only for numeric, logical or complex types
+```
+
+
+# Testing Algorithms
+
+```{r}
+# 1. Fixed step size ----------------------------------------
+# Compile the necessary functions.
+
+init <- c(0.75,10,.1,.1)
+boundary <- list(c(-0.9999, 0.9999),c(-100000,100000),c(1e-04, 1),c(1e-04, 1))
+numMCMCSamples <- 300
+
+ptm <- proc.time()
+resultsSSModFixed <- computeMLE(ssModel, paramNodesSS,
+                               method="fixed", paramInit=init,
+                               compiledFuns=compiledFunsSSmodel,
+                               stepsize=0.05,
+                               numMCMCSamples=numMCMCSamples,
+                               maxIter=500,
+                               boundary=boundary)
+timeSSModFixed <- proc.time() - ptm
+timeSSModFixed 
+mean(tail(resultsSSModFixed$param[, 1], 20), trim=.2) 
+mean(tail(resultsSSModFixed$param[, 2], 20), trim=.2) 
+mean(tail(resultsSSModFixed$param[, 3], 20), trim=.2) 
+mean(tail(resultsSSModFixed$param[, 4], 20), trim=.2) 
+save(resultsSSModFixed, file="SSModFixed.RData")
+```
+
+```{r}
+# 2. Small fixed step size ----------------------------------------
+ptm <- proc.time()
+resultsSSModSmallFixed <- computeMLE(ssModel, paramNodesSSMod,
+                                    method="fixed", paramInit=init,
+                                    compiledFuns=compiledFunsSSMod,
+                                    stepsize=0.005,
+                                    numMCMCSamples=numMCMCSamples,
+                                    maxIter=5000,
+                                    boundary=boundary)
+timeSSModSmallFixed <- proc.time() - ptm
+timeSSModSmallFixed 
+mean(tail(resultsSSModSmallFixed$param[, 1], 20), trim=.2) 
+mean(tail(resultsSSModSmallFixed$param[, 2], 20), trim=.2)
+mean(tail(resultsSSModSmallFixed$param[, 3], 20), trim=.2) 
+mean(tail(resultsSSModSmallFixed$param[, 4], 20), trim=.2)
+save(resultsSSModSmallFixed, file="SSModSmallFixed.RData")
+```
+
+```{r}
+# 3. Adadelta ----------------------------------------
+ptm <- proc.time()
+resultsSSModAdadelta <- computeMLE(ssModel, paramNodesSSMod,
+                                  method="adadelta", paramInit=init,
+                                  compiledFuns=compiledFunsSSMod,
+                                  numMCMCSamples=numMCMCSamples,
+                                  maxIter=300,
+                                  boundary=boundary)
+timeSSModAdadelta <- proc.time() - ptm
+timeSSModAdadelta 
+mean(tail(resultsSSModAdadelta$param[, 1], 20), trim=.2) 
+mean(tail(resultsSSModAdadelta$param[, 2], 20), trim=.2) 
+mean(tail(resultsSSModAdadelta$param[, 1], 20), trim=.2) 
+mean(tail(resultsSSModAdadelta$param[, 2], 20), trim=.2) 
+save(resultsSSModAdadelta, file="SSModAdadelta.RData")
+
+```
+
+```{r}
+
+# 4. Adam ----------------------------------------
+ptm <- proc.time()
+resultsSSModAdam <- computeMLE(ssModel, paramNodesSSMod,
+                              method="adam", paramInit=init,
+                              compiledFuns=compiledFunsSSMod,
+                              numMCMCSamples=numMCMCSamples,
+                              maxIter=300,
+                              boundary=boundary)
+timeSSModAdam <- proc.time() - ptm
+timeSSModAdam 
+mean(tail(resultsSSModAdam$param[, 1], 20), trim=.2) 
+mean(tail(resultsSSModAdam$param[, 2], 20), trim=.2) 
+mean(tail(resultsSSModAdam$param[, 3], 20), trim=.2) 
+mean(tail(resultsSSModAdam$param[, 4], 20), trim=.2)
+save(resultsSSModAdam, file="SSModAdam.RData")
+
+```
+
+```{r}
+# 5. Newton-Raphson ----------------------------------------
+ptm <- proc.time()
+resultsSSModNR <- computeMLE(ssModel, paramNodes=paramNodesSSMod,
+                            method="NR", paramInit=init,
+                            compiledFuns=compiledFunsSSMod,
+                            numMCMCSamples=numMCMCSamples,
+                            tol=1e-20,
+                            maxIter=300,
+                            boundary=boundary)
+timeSSModNR <- proc.time() - ptm
+timeSSModNR 
+mean(resultsSSModNR$param[201:300,1], trim=.2)
+mean(resultsSSModNR$param[201:300,2], trim=.2) 
+mean(resultsSSModNR$param[201:300,3], trim=.2)
+mean(resultsSSModNR$param[201:300,4], trim=.2) 
+save(resultsSSModNR, file="SSModNR.RData")
+```
+
+```{r}
+# 6. 1-D sampling ----------------------------------------
+ptm <- proc.time()
+resultsSSMod1D <- computeMLE(ssModel, paramNodesSSMod,
+                            method="ga1D", paramInit=init,
+                            compiledFuns=compiledFunsSSMod,
+                            numMCMCSamples=300, numMCMCSamples1D=300, 
+                            maxIter=300)
+timeSSMod1D <- proc.time() - ptm
+timeSSMod1D 
+mean(tail(resultsSSMod1D$param[, 1], 20), trim=.2) 
+mean(tail(resultsSSMod1D$param[, 2], 20), trim=.2) 
+mean(tail(resultsSSMod1D$param[, 3], 20), trim=.2) 
+mean(tail(resultsSSMod1D$param[, 4], 20), trim=.2) 
+save(resultsSSMod1D, file="SSMod1D.RData")
+
+```
+
+
+```{r}
+# 7. Hybrid
+# Run 10 iterations of 1D, and then run Adam.
+ptm <- proc.time()
+resultsSSMod1DFirst <- computeMLE(ssModel, paramNodesSSMod,
+                                 method="ga1D", paramInit=init,
+                                 compiledFuns=compiledFunsSSMod,
+                                 numMCMCSamples=numMCMCSamples, 
+                                 numMCMCSamples1D=300, 
+                                 maxIter=10)
+resultsSSModAdamSecond <- computeMLE(ssModel, paramNodesSSMod,
+                                    method="adam", 
+                                    paramInit=tail(resultsSSMod1DFirst$param, 1),
+                                    compiledFuns=compiledFunsSSMod,
+                                    numMCMCSamples=numMCMCSamples,
+                                    maxIter=300,
+                                    boundary=boundary)
+timeSSModHybrid <- proc.time() - ptm
+timeSSModHybrid
+
+mean(tail(resultsSSModAdamSecond$param[, 1], 20), trim=.2) 
+mean(tail(resultsSSModAdamSecond$param[, 2], 20), trim=.2) 
+mean(tail(resultsSSModAdamSecond$param[, 3], 20), trim=.2) 
+mean(tail(resultsSSModAdamSecond$param[, 4], 20), trim=.2) 
+
+```
+
+```{r}
+# MCEM -----------------------------
+#source("MCEM_with_output.R")
+SSMod2 <- ssModel$newModel()
+
+box <- list(list(c('sigPN', 'sigOE'), c(1e-04, 1)),list(c("rho"),c(-0.9999, 0.9999)),list(c("mu"),c(-Inf,Inf)))
+SSModMCEM <- buildMCEM(model=SSMod2, latentNodes='x[1:100]',
+                      boxConstraints=box) #theta0=c(0.75,10,.1,.1)
+## If I don't use the hacky version, this compiles, but then...
+
+ptm <- proc.time()
+resultsSSModMCEM <- SSModMCEM() #Error: could not find function "SSModMCEM"
+timeSSModMCEM <- proc.time() - ptm
+timeSSModMCEM 
+
+# Save outputs ------------------------
+save(resultsSSModMCEM, file="MCEM_SSMod.RData")
+```
+
+```{r}
+timeInfo <- cbind(c(timeSSModFixed, timeSSModSmallFixed,
+                    timeSSModAdadelta, timeSSModAdam,
+                    timeSSModNR, timeSSMod1D, timeSSModMCEM),
+                  c("fixed", "smallFixed", "adadelta", "adam",
+                    "NR", "1D", "mcem"))
+
+write.csv(timeInfo, "timeSSMod.csv", row.names=F)
+
+```
