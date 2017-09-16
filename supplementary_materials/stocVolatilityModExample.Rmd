@@ -45,14 +45,14 @@ svModel$mu <- 2.0
 sigmaEta <- 2.0
 
 ## calculate any dependencies that may be needed to simulate states and data
-svModel$calculate(svModel$getDependencies( c('rho','mu','sigPN','sigOE'), determOnly = TRUE))
+svModel$calculate(svModel$getDependencies( c('phi','mu','sigmaEta'), determOnly = TRUE))
 
 
 ## use the model to simulate states and data
 set.seed(12345)
-svModel$simulate( svModel$getDependencies(c('x','y')))
+svModel$simulate( svModel$getDependencies(c('h','y')))
 ## Look at what we got:
-svModel$x
+svModel$h
 svModel$y
 svModel$setData('y')
 
@@ -74,8 +74,9 @@ compiledFunsSVmodel <- buildMCMCmaxlik(svModel, paramNodesSV)
 # 1. Fixed step size ----------------------------------------
 # Compile the necesvary functions.
 
-init <- c(0.75,10,.1,.1)
-boundary <- list(c(-0.9999, 0.9999),c(-100000,100000),c(1e-04, 1),c(1e-04, 1))
+# need to make sure these are in the right order
+#init <- c(0.75,10,2)
+#boundary <- list(c(-0.9999, 0.9999),c(-100000,100000),c(0,1000))
 numMCMCSamples <- 300
 
 ptm <- proc.time()
@@ -217,8 +218,8 @@ mean(tail(resultsSVModAdamSecond$param[, 3], 20), trim=.2)
 svMod2 <- svModel$newModel()
 
 box <- list(list(c('sigmaEta'), c(0, 1000)),list(c("phi"),c(-0.9999, 0.9999)),list(c("mu"),c(-Inf,Inf)))
-svModMCEM <- buildMCEM(model=svMod2, latentNodes='x[1:100]',
-                      boxConstraints=box) #theta0=c(0.75,10,.1,.1)
+svModMCEM <- buildMCEM(model=svMod2, latentNodes='h[1:50]',
+                      boxConstraints=box) #theta0=c(0.75,10,2)
 ## If I don't use the hacky version, this compiles, but then...
 
 ptm <- proc.time()
