@@ -13,11 +13,11 @@ buildMCMCmaxlik <- function(model, paramNodes){
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
       ## control list extraction
-      logScale           <- control$log
-      reflective         <- control$reflective
-      adaptive           <- control$adaptive
-      adaptInterval      <- control$adaptInterval
-      scale              <- control$scale
+      logScale      <- if(!is.null(control$log))           control$log           else FALSE
+      reflective    <- if(!is.null(control$reflective))    control$reflective    else FALSE
+      adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
+      adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
+      scale         <- if(!is.null(control$scale))         control$scale         else 1
       computeGrad        <- control$computeGrad
       decideIncludePrior <- control$decideIncludePrior
       D <- length(model$expandNodeNames(target))
@@ -36,7 +36,7 @@ buildMCMCmaxlik <- function(model, paramNodes){
       gamma1        <- 0
       grad          <- numeric(2)
       ## checks
-      if(logScale & reflective)        stop('cannot use reflective RW sampler on a log scale (i.e. with options log=TRUE and reflective=TRUE')
+      if(logScale & reflective)      stop('cannot use reflective RW sampler on a log scale (i.e. with options log=TRUE and reflective=TRUE')
     },
     run = function() {
       currentValue <- values(model, target)
@@ -192,7 +192,8 @@ buildMCMCmaxlik <- function(model, paramNodes){
                                 computeGrad, 
                                 computeHess,
                                 decideIncludePrior,
-                                MCMC, MCMC1D,
+                                MCMC, 
+                                MCMC1D,
                                 project = model, resetFunctions = TRUE) 
   return(compiledFuns)
 }
