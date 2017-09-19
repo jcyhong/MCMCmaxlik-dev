@@ -17,8 +17,8 @@ library("MCMCmaxlik")
 ssCode <- nimbleCode({
   rho ~ dunif(-0.9999, 0.9999)
   mu ~ dnorm(0, sd = 1000)
-  sigPN ~ dunif(1e-04, 1)
-  sigOE ~ dunif(1e-04, 1)
+  sigPN ~ dunif(1e-04, 100)
+  sigOE ~ dunif(1e-04, 100)
   x[1] ~ dnorm(mu, sd = sqrt(sigPN^2/(1-rho*rho)))
   y[1] ~ dnorm(x[1], sd = sigOE)
   for (i in 2:T) {
@@ -35,8 +35,8 @@ ssModel <- nimbleModel(ssCode, constants = Consts)
 ## put values in the top-level parameters
 ssModel$rho <- 0.5
 ssModel$mu <- 5.0
-ssModel$sigPN <- 0.05
-ssModel$sigOE <- 0.05
+ssModel$sigPN <- 5
+ssModel$sigOE <- 5
 
 ## calculate any dependencies that may be needed to simulate states and data
 ssModel$calculate(ssModel$getDependencies( c('rho','mu','sigPN','sigOE'), determOnly = TRUE))
@@ -57,8 +57,6 @@ CssModel <- compileNimble(ssModel)
 
 ```{r compile}
 compiledFunsSSmodel <- buildMCMCmaxlik(ssModel, paramNodesSS)
-#Error in logScale & reflective : 
-#  operations are possible only for numeric, logical or complex types
 ```
 
 
@@ -68,8 +66,8 @@ compiledFunsSSmodel <- buildMCMCmaxlik(ssModel, paramNodesSS)
 # 1. Fixed step size ----------------------------------------
 # Compile the necessary functions.
 
-init <- c(0.75,10,.1,.1)
-boundary <- list(c(-0.9999, 0.9999),c(-100000,100000),c(1e-04, 1),c(1e-04, 1))
+init <- c(0.75,10,1,1)
+boundary <- list(c(-0.9999, 0.9999),c(-100000,100000),c(1e-04, 100),c(1e-04, 100))
 numMCMCSamples <- 300
 
 ptm <- proc.time()
@@ -81,48 +79,49 @@ resultsSSModFixed <- computeMLE(ssModel, paramNodesSS,
                                maxIter=500,
                                boundary=boundary)
 timeSSModFixed <- proc.time() - ptm
-timeSSModFixed 
-mean(tail(resultsSSModFixed$param[, 1], 20), trim=.2) 
-mean(tail(resultsSSModFixed$param[, 2], 20), trim=.2) 
-mean(tail(resultsSSModFixed$param[, 3], 20), trim=.2) 
-mean(tail(resultsSSModFixed$param[, 4], 20), trim=.2) 
+timeSSModFixed  ## 126.038  
+mean(tail(resultsSSModFixed$param[, 1], 20), trim=.2)  # 0.0006831317
+mean(tail(resultsSSModFixed$param[, 2], 20), trim=.2)   # 8.730821
+mean(tail(resultsSSModFixed$param[, 3], 20), trim=.2) # 44.47665
+mean(tail(resultsSSModFixed$param[, 4], 20), trim=.2)  # 44.47665
 save(resultsSSModFixed, file="SSModFixed.RData")
 ```
 
 ```{r}
 # 2. Small fixed step size ----------------------------------------
 ptm <- proc.time()
-resultsSSModSmallFixed <- computeMLE(ssModel, paramNodesSSMod,
+resultsSSModSmallFixed <- computeMLE(ssModel,paramNodesSS,
                                     method="fixed", paramInit=init,
-                                    compiledFuns=compiledFunsSSMod,
+                                    compiledFuns=compiledFunsSSmodel,
                                     stepsize=0.005,
                                     numMCMCSamples=numMCMCSamples,
                                     maxIter=5000,
                                     boundary=boundary)
 timeSSModSmallFixed <- proc.time() - ptm
-timeSSModSmallFixed 
-mean(tail(resultsSSModSmallFixed$param[, 1], 20), trim=.2) 
-mean(tail(resultsSSModSmallFixed$param[, 2], 20), trim=.2)
-mean(tail(resultsSSModSmallFixed$param[, 3], 20), trim=.2) 
-mean(tail(resultsSSModSmallFixed$param[, 4], 20), trim=.2)
+timeSSModSmallFixed  ## 1304.907 
+mean(tail(resultsSSModSmallFixed$param[, 1], 20), trim=.2)  ## 0.3388454
+mean(tail(resultsSSModSmallFixed$param[, 2], 20), trim=.2) ## 7.34226
+mean(tail(resultsSSModSmallFixed$param[, 3], 20), trim=.2)  ## 5.032748
+mean(tail(resultsSSModSmallFixed$param[, 4], 20), trim=.2) ##  5.533179
 save(resultsSSModSmallFixed, file="SSModSmallFixed.RData")
+## Not too bad
 ```
 
 ```{r}
 # 3. Adadelta ----------------------------------------
 ptm <- proc.time()
-resultsSSModAdadelta <- computeMLE(ssModel, paramNodesSSMod,
+resultsSSModAdadelta <- computeMLE(ssModel, paramNodesSS,
                                   method="adadelta", paramInit=init,
-                                  compiledFuns=compiledFunsSSMod,
+                                  compiledFuns=compiledFunsSSmodel,
                                   numMCMCSamples=numMCMCSamples,
                                   maxIter=300,
                                   boundary=boundary)
 timeSSModAdadelta <- proc.time() - ptm
-timeSSModAdadelta 
-mean(tail(resultsSSModAdadelta$param[, 1], 20), trim=.2) 
-mean(tail(resultsSSModAdadelta$param[, 2], 20), trim=.2) 
-mean(tail(resultsSSModAdadelta$param[, 1], 20), trim=.2) 
-mean(tail(resultsSSModAdadelta$param[, 2], 20), trim=.2) 
+timeSSModAdadelta  ## 15.190 
+mean(tail(resultsSSModAdadelta$param[, 1], 20), trim=.2)  ## 0.3237882
+mean(tail(resultsSSModAdadelta$param[, 2], 20), trim=.2)  ## 7.351178
+mean(tail(resultsSSModAdadelta$param[, 3], 20), trim=.2)  ## 4.750414
+mean(tail(resultsSSModAdadelta$param[, 4], 20), trim=.2)  ##  5.827465
 save(resultsSSModAdadelta, file="SSModAdadelta.RData")
 
 ```
@@ -131,18 +130,18 @@ save(resultsSSModAdadelta, file="SSModAdadelta.RData")
 
 # 4. Adam ----------------------------------------
 ptm <- proc.time()
-resultsSSModAdam <- computeMLE(ssModel, paramNodesSSMod,
+resultsSSModAdam <- computeMLE(ssModel, paramNodesSS,
                               method="adam", paramInit=init,
-                              compiledFuns=compiledFunsSSMod,
+                              compiledFuns=compiledFunsSSmodel,
                               numMCMCSamples=numMCMCSamples,
                               maxIter=300,
                               boundary=boundary)
 timeSSModAdam <- proc.time() - ptm
-timeSSModAdam 
-mean(tail(resultsSSModAdam$param[, 1], 20), trim=.2) 
-mean(tail(resultsSSModAdam$param[, 2], 20), trim=.2) 
-mean(tail(resultsSSModAdam$param[, 3], 20), trim=.2) 
-mean(tail(resultsSSModAdam$param[, 4], 20), trim=.2)
+timeSSModAdam  ## 23.663 
+mean(tail(resultsSSModAdam$param[, 1], 20), trim=.2)  ## 0.3064529
+mean(tail(resultsSSModAdam$param[, 2], 20), trim=.2)  ## 7.336038
+mean(tail(resultsSSModAdam$param[, 3], 20), trim=.2)  ##  5.402786
+mean(tail(resultsSSModAdam$param[, 4], 20), trim=.2) ## 5.097902
 save(resultsSSModAdam, file="SSModAdam.RData")
 
 ```
@@ -150,15 +149,20 @@ save(resultsSSModAdam, file="SSModAdam.RData")
 ```{r}
 # 5. Newton-Raphson ----------------------------------------
 ptm <- proc.time()
-resultsSSModNR <- computeMLE(ssModel, paramNodes=paramNodesSSMod,
+resultsSSModNR <- computeMLE(ssModel, paramNodes=paramNodesSS,
                             method="NR", paramInit=init,
-                            compiledFuns=compiledFunsSSMod,
+                            compiledFuns=compiledFunsSSmodel,
                             numMCMCSamples=numMCMCSamples,
                             tol=1e-20,
                             maxIter=300,
                             boundary=boundary)
 timeSSModNR <- proc.time() - ptm
 timeSSModNR 
+# |-------------|-------------|-------------|-------------|
+# |-------------------------------------------------------|
+# [1]   -3.848618  -15.925384 1178.300550 1686.456746
+# Error in solve.default(approxHessian, gradCurr) : 
+#   system is computationally singular: reciprocal condition number = 2.09322e-17
 mean(resultsSSModNR$param[201:300,1], trim=.2)
 mean(resultsSSModNR$param[201:300,2], trim=.2) 
 mean(resultsSSModNR$param[201:300,3], trim=.2)
@@ -169,16 +173,21 @@ save(resultsSSModNR, file="SSModNR.RData")
 ```{r}
 # 6. 1-D sampling ----------------------------------------
 ptm <- proc.time()
-resultsSSMod1D <- computeMLE(ssModel, paramNodesSSMod,
+resultsSSMod1D <- computeMLE(ssModel, paramNodesSS,
                             method="ga1D", paramInit=init,
-                            compiledFuns=compiledFunsSSMod,
+                            compiledFuns=compiledFunsSSmodel,
                             numMCMCSamples=300, numMCMCSamples1D=300, 
                             maxIter=300)
 timeSSMod1D <- proc.time() - ptm
-timeSSMod1D 
-mean(tail(resultsSSMod1D$param[, 1], 20), trim=.2) 
-mean(tail(resultsSSMod1D$param[, 2], 20), trim=.2) 
-mean(tail(resultsSSMod1D$param[, 3], 20), trim=.2) 
+timeSSMod1D  
+# warning: problem initializing stochastic node, logProb less than -1e12
+# |-------------|-------------|-------------|-------------|
+# |-------------------------------------------------------|
+# Error in ar.yw.default(x, aic = aic, order.max = order.max, na.action = na.action,  : 
+#   zero-variance series
+mean(tail(resultsSSMod1D$param[, 1], 20), trim=.2)  
+mean(tail(resultsSSMod1D$param[, 2], 20), trim=.2)  
+mean(tail(resultsSSMod1D$param[, 3], 20), trim=.2)
 mean(tail(resultsSSMod1D$param[, 4], 20), trim=.2) 
 save(resultsSSMod1D, file="SSMod1D.RData")
 
@@ -189,25 +198,30 @@ save(resultsSSMod1D, file="SSMod1D.RData")
 # 7. Hybrid
 # Run 10 iterations of 1D, and then run Adam.
 ptm <- proc.time()
-resultsSSMod1DFirst <- computeMLE(ssModel, paramNodesSSMod,
+resultsSSMod1DFirst <- computeMLE(ssModel, paramNodesSS,
                                  method="ga1D", paramInit=init,
-                                 compiledFuns=compiledFunsSSMod,
+                                 compiledFuns=compiledFunsSSmodel,
                                  numMCMCSamples=numMCMCSamples, 
                                  numMCMCSamples1D=300, 
                                  maxIter=10)
-resultsSSModAdamSecond <- computeMLE(ssModel, paramNodesSSMod,
+resultsSSModAdamSecond <- computeMLE(ssModel, paramNodesSS,
                                     method="adam", 
                                     paramInit=tail(resultsSSMod1DFirst$param, 1),
-                                    compiledFuns=compiledFunsSSMod,
+                                    compiledFuns=compiledFunsSSmodel,
                                     numMCMCSamples=numMCMCSamples,
                                     maxIter=300,
                                     boundary=boundary)
 timeSSModHybrid <- proc.time() - ptm
-timeSSModHybrid
+timeSSModHybrid 
+# warning: problem initializing stochastic node, logProb less than -1e12
+# |-------------|-------------|-------------|-------------|
+# |-------------------------------------------------------|
+# Error in ar.yw.default(x, aic = aic, order.max = order.max, na.action = na.action,  : 
+#   zero-variance series
 
-mean(tail(resultsSSModAdamSecond$param[, 1], 20), trim=.2) 
-mean(tail(resultsSSModAdamSecond$param[, 2], 20), trim=.2) 
-mean(tail(resultsSSModAdamSecond$param[, 3], 20), trim=.2) 
+mean(tail(resultsSSModAdamSecond$param[, 1], 20), trim=.2)  
+mean(tail(resultsSSModAdamSecond$param[, 2], 20), trim=.2)  
+mean(tail(resultsSSModAdamSecond$param[, 3], 20), trim=.2)  
 mean(tail(resultsSSModAdamSecond$param[, 4], 20), trim=.2) 
 
 ```
@@ -217,15 +231,18 @@ mean(tail(resultsSSModAdamSecond$param[, 4], 20), trim=.2)
 #source("MCEM_with_output.R")
 SSMod2 <- ssModel$newModel()
 
-box <- list(list(c('sigPN', 'sigOE'), c(1e-04, 1)),list(c("rho"),c(-0.9999, 0.9999)),list(c("mu"),c(-Inf,Inf)))
+box <- list(list(c('sigPN', 'sigOE'), c(1e-04, 100)),list(c("rho"),c(-0.9999, 0.9999)),list(c("mu"),c(-Inf,Inf)))
 SSModMCEM <- buildMCEM(model=SSMod2, latentNodes='x[1:100]',
                       boxConstraints=box) #theta0=c(0.75,10,.1,.1)
 ## If I don't use the hacky version, this compiles, but then...
 
 ptm <- proc.time()
-resultsSSModMCEM <- SSModMCEM() #Error: could not find function "SSModMCEM"
+resultsSSModMCEM <- SSModMCEM$run(initM = 1000)
 timeSSModMCEM <- proc.time() - ptm
-timeSSModMCEM 
+timeSSModMCEM  ## 352.824 
+## iteration number 32
+ # rho          mu       sigPN       sigOE 
+ #   0.999899 1107.885603    4.597082    6.301182 
 
 # Save outputs ------------------------
 save(resultsSSModMCEM, file="MCEM_SSMod.RData")
