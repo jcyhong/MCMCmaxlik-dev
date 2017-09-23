@@ -18,40 +18,42 @@ phi=.2
 mu=10
 sigmaEta=3
 h=rep(0,50)
-etat=1
-ut=.25
-y=rep(ut*exp(0/2),50)
+etat=rnorm(50,0,sd=sigmaEta)
+ut=rnorm(50)
+y=rep(ut[1]*exp(0/2),50)
 for(i in 2:50){
-  h[i]=mu+phi*(h[i-1]-mu)+etat
-  y[i]=ut*exp(h[i]/2)
+  h[i]=mu+phi*(h[i-1]-mu)+etat[i]
+  y[i]=ut[i]*exp(h[i]/2)
 }
 
- 
+write.csv(cbind(ut,h,y),"stocVolModData.csv") 
 ```
 
 ```{r}
 svCode <- nimbleCode({
- ut ~ dnorm(0,1)
- etat ~ dnorm(0,sd=sigmaEta)
+ ut[1] ~ dnorm(0,1)
+ etat[1] ~ dnorm(0,sd=sigmaEta)
   #h[1] <- 0
-  y[1] <- ut*exp(h[1]/2)
-  for (i in 2:T) {
-    h[i] <- mu+phi*(h[i-1]-mu)+etat
-    y[i] <- ut*exp(h[i]/2)
+  y[1] <- ut[1]*exp(h[1]/2)
+  for (i in 2:TT) {
+    h[i] <- mu+phi*(h[i-1]-mu)+etat[i]
+    y[i] <- ut[i]*exp(h[i]/2)
+     ut[i] ~ dnorm(0,1)
+      etat[i] ~ dnorm(0,sd=sigmaEta)
   }
   phi ~dunif(-.999,0.999)
   mu ~ dnorm(0, sd = 1000)
   sigmaEta~dunif(0, 1000)
 })
 
-Consts <- list(T = 50)
+Consts <- list(TT = 50)
 
 data <- list(
   h=h,
   y=y
 )
 
-inits <- list(phi=.5,mu=10,sigmaEta=5,ut=2)
+inits <- list(phi=.5,mu=10,sigmaEta=5,ut=rep(2,50))
 
 
 ## build the model object
@@ -78,11 +80,12 @@ svModel <- nimbleModel(svCode, constants = Consts,data=data,inits=inits)
 ## this wasn't working
 
 paramNodesSV <- svModel$getNodeNames(topOnly=T)
+paramNodesSV=paramNodesSV[-c(1:50)] ## remove the ut's
 CsvModel <- compileNimble(svModel)
 ```
 
 ```{r compile}
-compiledFunsSVmodelel <- buildMCMCmaxlik(svModel, paramNodesSV)
+compiledFunsSVmodel <- buildMCMCmaxlik(svModel, paramNodesSV)
 
 ```
 
@@ -94,24 +97,28 @@ compiledFunsSVmodelel <- buildMCMCmaxlik(svModel, paramNodesSV)
 # Compile the necesvary functions.
 
 # need to make sure these are in the right order
-#init <- c(0.75,10,2)
-boundary <- list(c(-100, 100),c(-.9999,0.9999),c(-1000,1000),c(0,1000))
+init <- c(0.75,20,1)
+boundary <- list(c(-.9999,0.9999),c(-1000,1000),c(0,1000))
 numMCMCSamples <- 300
 
 ptm <- proc.time()
 resultsSVModFixed <- computeMLE(svModel, paramNodesSV,
                                method="fixed", paramInit=init,
-                               compiledFuns=compiledFunsSVmodelel,
+                               compiledFuns=compiledFunsSVmodel,
                                stepsize=0.05,
                                numMCMCSamples=numMCMCSamples,
-                               maxIter=500,
+                               maxIter=300,
                                boundary=boundary)
 timesSVModFixed <- proc.time() - ptm
-timesSVModFixed  ## 21.330 
-mean(tail(resultsSVModFixed$param[, 1], 20), trim=.2)  ##  1.06675
-mean(tail(resultsSVModFixed$param[, 2], 20), trim=.2)  ## 0.9999
-mean(tail(resultsSVModFixed$param[, 3], 20), trim=.2)  ##  1.00063
-mean(tail(resultsSVModFixed$param[, 3], 20), trim=.2)  ## 1.00063
+timesSVModFixed 
+#warning: problem initializing stochastic node, logProb less than -1e12
+#|-------------|-------------|-------------|-------------|
+#|-------------------------------------------------------|
+resultsSVModFixed$iter
+mean(tail(resultsSVModFixed$param[, 1], 20), trim=.2)  ##  
+mean(tail(resultsSVModFixed$param[, 2], 20), trim=.2)  ## 
+mean(tail(resultsSVModFixed$param[, 3], 20), trim=.2)  ## 
+
 save(resultsSVModFixed, file="svModFixed.RData")
 ```
 
@@ -123,14 +130,14 @@ resultsSVModSmallFixed <- computeMLE(svModel, paramNodesSV,
                                     compiledFuns=compiledFunsSVmodel,
                                     stepsize=0.005,
                                     numMCMCSamples=numMCMCSamples,
-                                    maxIter=5000,
+                                    maxIter=3000,
                                     boundary=boundary)
 timesSVModSmallFixed <- proc.time() - ptm ## 233.045 
-timesSVModSmallFixed  
-mean(tail(resultsSVModSmallFixed$param[, 1], 20), trim=.2)  ## 0.9090979
-mean(tail(resultsSVModSmallFixed$param[, 2], 20), trim=.2) ## 0.9999
-mean(tail(resultsSVModSmallFixed$param[, 3], 20), trim=.2)  ## 1.000064
-mean(tail(resultsSVModSmallFixed$param[, 4], 20), trim=.2) ## 1000 
+timesSVModSmallFixed   ## 811.290 
+resultsSVModSmallFixed$iter ## 3000
+mean(tail(resultsSVModSmallFixed$param[, 1], 20), trim=.2)  ## 0.75
+mean(tail(resultsSVModSmallFixed$param[, 2], 20), trim=.2) ##  20.00034
+mean(tail(resultsSVModSmallFixed$param[, 3], 20), trim=.2)  ##  106.6361
 
 save(resultsSVModSmallFixed, file="svModSmallFixed.RData")
 ```
@@ -145,11 +152,11 @@ resultsSVModAdadelta <- computeMLE(svModel, paramNodesSV,
                                   maxIter=300,
                                   boundary=boundary)
 timesSVModAdadelta <- proc.time() - ptm
-timesSVModAdadelta  ## 0.386 
-mean(tail(resultsSVModAdadelta$param[, 1], 20), trim=.2)  ## 0.2459932
-mean(tail(resultsSVModAdadelta$param[, 2], 20), trim=.2)  ## 0.9999
-mean(tail(resultsSVModAdadelta$param[, 3], 20), trim=.2)  ## 0.2459932
-mean(tail(resultsSVModAdadelta$param[, 4], 20), trim=.2)  ## 0.9987716
+timesSVModAdadelta  ## 20.699 
+#300
+mean(tail(resultsSVModAdadelta$param[, 1], 20), trim=.2)  ## 0.75
+mean(tail(resultsSVModAdadelta$param[, 2], 20), trim=.2)  ## 20.04093
+mean(tail(resultsSVModAdadelta$param[, 3], 20), trim=.2)  ## 8.19414
 save(resultsSVModAdadelta, file="svModAdadelta.RData")
 
 ```
@@ -165,11 +172,11 @@ resultsSVModAdam <- computeMLE(svModel, paramNodesSV,
                               maxIter=300,
                               boundary=boundary)
 timesSVModAdam <- proc.time() - ptm
-timesSVModAdam  ## 0.150 
-mean(tail(resultsSVModAdam$param[, 1], 20), trim=.2)  ## 1.234483
-mean(tail(resultsSVModAdam$param[, 2], 20), trim=.2)  ## 0.9999
-mean(tail(resultsSVModAdam$param[, 3], 20), trim=.2)  ## 1.075362
-mean(tail(resultsSVModAdam$param[, 3], 20), trim=.2)  ## 1.075362
+timesSVModAdam  ## 26.909 
+## 300
+mean(tail(resultsSVModAdam$param[, 1], 20), trim=.2)  ##  0.75
+mean(tail(resultsSVModAdam$param[, 2], 20), trim=.2)  ##22.53195
+mean(tail(resultsSVModAdam$param[, 3], 20), trim=.2)  ## 19.27253
 save(resultsSVModAdam, file="svModAdam.RData")
 
 ```
@@ -186,12 +193,12 @@ resultsSVModNR <- computeMLE(svModel, paramNodes=paramNodesSV,
                             boundary=boundary)
 timesSVModNR <- proc.time() - ptm
 timesSVModNR 
-# warning: problem initializing stochastic node, logProb less than -1e12
 # |-------------|-------------|-------------|-------------|
 # |-------------------------------------------------------|
-# [1] -0.3890967480  0.0000000000 -0.0001298736 -0.0453409685
+# [1]  0.000000e+00 -1.756226e-04 -1.005698e+01
 # Error in if (thetaNew[i] < boundary[[i]][1]) { : 
 #   missing value where TRUE/FALSE needed
+
 mean(resultsSVModNR$param[201:300,1], trim=.2)
 mean(resultsSVModNR$param[201:300,2], trim=.2) 
 mean(resultsSVModNR$param[201:300,3], trim=.2)
@@ -208,11 +215,15 @@ resultsSVMod1D <- computeMLE(svModel, paramNodesSV,
                             numMCMCSamples=300, numMCMCSamples1D=300, 
                             maxIter=300)
 timesSVMod1D <- proc.time() - ptm
+# |-------------|-------------|-------------|-------------|
+# |-------------------------------------------------------|
+# warning: problem initializing stochastic node, logProb less than -1e12
+# |-------------|-------------|-------------|-------------|
+# |-------------------------------------------------------|
 timesSVMod1D  ## 1.884 
 mean(tail(resultsSVMod1D$param[, 1], 20), trim=.2)  ## 0.1099437
 mean(tail(resultsSVMod1D$param[, 2], 20), trim=.2)  ##  0.999
 mean(tail(resultsSVMod1D$param[, 3], 20), trim=.2)  ## 1.077608
-mean(tail(resultsSVMod1D$param[, 4], 20), trim=.2)  ## 999.9996
 save(resultsSVMod1D, file="svMod1D.RData")
 
 ```
@@ -250,13 +261,11 @@ mean(tail(resultsSVModAdamSecond$param[, 4], 20), trim=.2)  ## 6.777809
 #source("MCEM_with_output.R")
 svMod2 <- svModel$newModel()
 
-box <- list(list(c("ut",c(-100,100)),c('sigmaEta'), c(0, 1000)),list(c("phi"),c(-0.9999, 0.9999)),list(c("mu"),c(-Inf,Inf)))
-svModMCEM <- buildMCEM(model=svMod2, latentNodes=list(svModel$getNodeNames(latentOnly=T)),
+box <- list(list(c('sigmaEta'), c(0, 1000)),list(c("phi"),c(-0.9999, 0.9999)),list(c("mu"),c(-Inf,Inf)))
+svModMCEM <- buildMCEM(model=svMod2, latentNodes=list(paramNodesSV),
                       boxConstraints=box)
-#NAs introduced by coercionError in modelDef$maps$graphID_2_nodeName[graphID] : 
-#  only 0's may be mixed with negative subscripts
-
-## specifying latent nodes wrong?
+# NAs introduced by coercionUser-specified lower bound for phi is below lower bound detected by NIMBLE.  User-specified upper bound for phi is above upper bound detected by NIMBLE.  Error in buildMCEM(model = svMod2, latentNodes = list(paramNodesSV), boxConstraints = box) : 
+#   no latentNodes
 svModel$getNodeNames(latentOnly=T)
 
 ptm <- proc.time()
