@@ -50,6 +50,7 @@ ssModel$x
 ssModel$y
 ssModel$setData('y')
 
+write.csv(cbind(ssModel$x,ssModel$y),"statespaceModData.csv")
 
 paramNodesSS <- ssModel$getNodeNames(topOnly=T)
 CssModel <- compileNimble(ssModel)
@@ -79,11 +80,12 @@ resultsSSModFixed <- computeMLE(ssModel, paramNodesSS,
                                maxIter=500,
                                boundary=boundary)
 timeSSModFixed <- proc.time() - ptm
-timeSSModFixed  ## 126.038  
+timeSSModFixed  ## 133.317  
+resultsSSModFixed$iter ## 500
 mean(tail(resultsSSModFixed$param[, 1], 20), trim=.2)  # 0.0006831317
 mean(tail(resultsSSModFixed$param[, 2], 20), trim=.2)   # 8.730821
-mean(tail(resultsSSModFixed$param[, 3], 20), trim=.2) # 44.47665
-mean(tail(resultsSSModFixed$param[, 4], 20), trim=.2)  # 44.47665
+mean(tail(resultsSSModFixed$param[, 3], 20), trim=.2) #  44.47665
+mean(tail(resultsSSModFixed$param[, 4], 20), trim=.2)  # 63.50952
 save(resultsSSModFixed, file="SSModFixed.RData")
 ```
 
@@ -98,11 +100,12 @@ resultsSSModSmallFixed <- computeMLE(ssModel,paramNodesSS,
                                     maxIter=5000,
                                     boundary=boundary)
 timeSSModSmallFixed <- proc.time() - ptm
-timeSSModSmallFixed  ## 1304.907 
+timeSSModSmallFixed  ## 1194.933  
+resultsSSModSmallFixed$iter ## 5000
 mean(tail(resultsSSModSmallFixed$param[, 1], 20), trim=.2)  ## 0.3388454
 mean(tail(resultsSSModSmallFixed$param[, 2], 20), trim=.2) ## 7.34226
 mean(tail(resultsSSModSmallFixed$param[, 3], 20), trim=.2)  ## 5.032748
-mean(tail(resultsSSModSmallFixed$param[, 4], 20), trim=.2) ##  5.533179
+mean(tail(resultsSSModSmallFixed$param[, 4], 20), trim=.2) ## 5.533179
 save(resultsSSModSmallFixed, file="SSModSmallFixed.RData")
 ## Not too bad
 ```
@@ -117,10 +120,11 @@ resultsSSModAdadelta <- computeMLE(ssModel, paramNodesSS,
                                   maxIter=300,
                                   boundary=boundary)
 timeSSModAdadelta <- proc.time() - ptm
-timeSSModAdadelta  ## 15.190 
-mean(tail(resultsSSModAdadelta$param[, 1], 20), trim=.2)  ## 0.3237882
+timeSSModAdadelta  ## 15.574 
+resultsSSModAdadelta$iter ## 215
+mean(tail(resultsSSModAdadelta$param[, 1], 20), trim=.2)  ##  0.3237882
 mean(tail(resultsSSModAdadelta$param[, 2], 20), trim=.2)  ## 7.351178
-mean(tail(resultsSSModAdadelta$param[, 3], 20), trim=.2)  ## 4.750414
+mean(tail(resultsSSModAdadelta$param[, 3], 20), trim=.2)  ##  4.750414
 mean(tail(resultsSSModAdadelta$param[, 4], 20), trim=.2)  ##  5.827465
 save(resultsSSModAdadelta, file="SSModAdadelta.RData")
 
@@ -137,7 +141,8 @@ resultsSSModAdam <- computeMLE(ssModel, paramNodesSS,
                               maxIter=300,
                               boundary=boundary)
 timeSSModAdam <- proc.time() - ptm
-timeSSModAdam  ## 23.663 
+timeSSModAdam  ## 22.589  
+resultsSSModAdam$iter ## 300
 mean(tail(resultsSSModAdam$param[, 1], 20), trim=.2)  ## 0.3064529
 mean(tail(resultsSSModAdam$param[, 2], 20), trim=.2)  ## 7.336038
 mean(tail(resultsSSModAdam$param[, 3], 20), trim=.2)  ##  5.402786
@@ -239,10 +244,13 @@ SSModMCEM <- buildMCEM(model=SSMod2, latentNodes='x[1:100]',
 ptm <- proc.time()
 resultsSSModMCEM <- SSModMCEM$run(initM = 1000)
 timeSSModMCEM <- proc.time() - ptm
-timeSSModMCEM  ## 352.824 
-## iteration number 32
- # rho          mu       sigPN       sigOE 
- #   0.999899 1107.885603    4.597082    6.301182 
+timeSSModMCEM  ## 358.430 
+# Iteration Number: 32.
+# Current number of MCMC iterations: 9046.
+# Parameter Estimates: 
+#         rho          mu       sigPN       sigOE 
+#    0.999899 1107.885603    4.597082    6.301182 
+# Convergence Criterion: 0.000284768.
 
 # Save outputs ------------------------
 save(resultsSSModMCEM, file="MCEM_SSMod.RData")
