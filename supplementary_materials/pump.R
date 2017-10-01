@@ -57,10 +57,11 @@ resultsPumpFixed <- computeMLE(pump, paramNodesPump,
                                compiledFuns=compiledFunsPump,
                                stepsize=0.05,
                                numMCMCSamples=numMCMCSamples,
-                               maxIter=500,
+                               maxIter=300,
                                boundary=boundary)
 timePumpFixed <- proc.time() - ptm
 timePumpFixed ##  4.475 
+resultsPumpFixed$iter ## 300
 mean(tail(resultsPumpFixed$param[, 1], 20), trim=.2) ## 0.8241004
 mean(tail(resultsPumpFixed$param[, 2], 20), trim=.2) ## 1.265609
 save(resultsPumpFixed, file="pumpFixed.RData")
@@ -72,10 +73,11 @@ resultsPumpSmallFixed <- computeMLE(pump, paramNodesPump,
                                     compiledFuns=compiledFunsPump,
                                     stepsize=0.005,
                                     numMCMCSamples=numMCMCSamples,
-                                    maxIter=5000,
+                                    maxIter=3000,
                                     boundary=boundary)
 timePumpSmallFixed <- proc.time() - ptm
-timePumpSmallFixed ## 46.134 
+timePumpSmallFixed ## 94.936 
+resultsPumpSmallFixed$iter
 mean(tail(resultsPumpSmallFixed$param[, 1], 20), trim=.2) ## 0.8225081
 mean(tail(resultsPumpSmallFixed$param[, 2], 20), trim=.2) ## 1.260764
 save(resultsPumpSmallFixed, file="pumpSmallFixed.RData")

@@ -101,7 +101,7 @@ resultsGLMMFixed <- computeMLE(glmmMod, paramNodes,
 timeGLMMFixed <- proc.time() - ptm  ##  103.498 
 save(resultsGLMMFixed, file="GLMMFixed.RData")
 
-apply(tail(resultsGLMMFixed$param, 100), 2, mean, trim=0.2)
+apply(tail(resultsGLMMFixed$param, 20), 2, mean, trim=0.2)
 
 # 2. Small fixed step size ----------------------------------------
 ptm <- proc.time()
@@ -110,12 +110,12 @@ resultsGLMMFixedSmall <- computeMLE(glmmMod, paramNodes,
                                     stepsize=0.005,
                                     compiledFuns=compiledFunsglmm,
                                     numMCMCSamples=numMCMCSamples,
-                                    maxIter=300,
+                                    maxIter=3000,
                                     boundary=boundary)
 timeGLMMFixedSmall <- proc.time() - ptm  ## 104.788 
 save(resultsGLMMFixedSmall, file="GLMMFixedSmall.RData")
 
-apply(tail(resultsGLMMFixedSmall$param, 100), 2, mean, trim=0.2)
+apply(tail(resultsGLMMFixedSmall$param, 20), 2, mean, trim=0.2)
 
 # 3. Adadelta ----------------------------------------
 ptm <- proc.time()
@@ -128,7 +128,7 @@ resultsAdadelta <- computeMLE(glmmMod, paramNodes,
 timeGLMMAdadelta <- proc.time() - ptm  ## 107.366 
 save(resultsAdadelta, file="GLMMAdadelta.RData")
 
-apply(tail(resultsAdadelta$param, 100), 2, mean, trim=0.2)
+apply(tail(resultsAdadelta$param, 20), 2, mean, trim=0.2)
 
 # 4. Adam ----------------------------------------
 ptm <- proc.time()
@@ -141,7 +141,7 @@ resultsAdam <- computeMLE(glmmMod, paramNodes,
 timeGLMMAdam <- proc.time() - ptm   ## 107.962 
 save(resultsAdam, file="GLMMAdam.RData")
 
-apply(tail(resultsAdam$param, 100), 2, mean, trim=0.2)
+apply(tail(resultsAdam$param, 20), 2, mean, trim=0.2)
 
 # 5. Newton-Raphson ----------------------------------------
 ptm <- proc.time()
@@ -165,12 +165,8 @@ results1D <- computeMLE(glmmMod, paramNodes,
 timeGLMM1D <- proc.time() - ptm ## 511.821 
 save(results1D, file="GLMM1D.Rdata")
 
-mean(results1D$param[201:300,1], trim=0.2)  ## 0.8590177
-mean(results1D$param[201:300,2], trim=0.2)  ## 0.2767505
-mean(results1D$param[201:300,3], trim=0.2)  ## -1.606323
-mean(results1D$param[201:300,4], trim=0.2)  ## 0.8699418
-mean(results1D$param[201:300,5], trim=0.2)  ##  4.032243
-mean(results1D$param[201:300,6], trim=0.2)  ## 1.394891
+apply(tail(results1D$param, 20), 2, mean, trim=0.2)
+
 
 ptm <- proc.time()
 sal <- glmm(Mate ~ 0 + Cross, random=list(~ 0 + Female,
