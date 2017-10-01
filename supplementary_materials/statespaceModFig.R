@@ -1,3 +1,4 @@
+require(ggplot2)
 require(reshape)
 iteratesFixed <- data.frame(
   iter=1:nrow(resultsSSModFixed$param),
@@ -10,15 +11,15 @@ iteratesSmallFixed <- data.frame(
   method=rep("Fixed (0.005)", nrow(resultsSSModSmallFixed$param))
 )
 # iteratesLogregNR <- data.frame(
-#   iter=1:nrow(resultsLogregNR$param),
-#   resultsLogregNR$param,
-#   method=rep("Newton-Raphson", nrow(resultsLogregNR$param))
+#   iter=1:nrow(resultsSSModNR$param),
+#   resultsSSModNR$param,
+#   method=rep("Newton-Raphson", nrow(resultsSSModNR$param))
 # )
-# iterates1D <- data.frame(
-#   iter=1:nrow(results1D$param),
-#   results1D$param,
-#   method=rep("1D sampling", nrow(results1D$param))
-# )
+iterates1D <- data.frame(
+  iter=1:nrow(resultsSSMod1D$param),
+  resultsSSMod1D$param,
+  method=rep("1D sampling", nrow(resultsSSMod1D$param))
+)
 iteratesAdadelta <- data.frame(
   iter=1:nrow(resultsSSModAdadelta$param),
   resultsSSModAdadelta$param,
@@ -30,10 +31,11 @@ iteratesAdam <- data.frame(
   method=rep("Adam", nrow(resultsSSModAdam$param))
 )
 
-iterates <- rbind(iteratesFixed, iteratesSmallFixed,
-                  #iteratesLogregNR,
-                  iteratesAdadelta, iteratesAdam)#,
-                  #iterates1D) 
+iterates <- rbind(#iteratesFixed,
+  iteratesSmallFixed,
+                 # iteratesLogregNR,
+                  iteratesAdadelta, iteratesAdam,
+                  iterates1D) 
 names(iterates) <- c("iter", paramNodesSS, "method")
 
 write.csv(iterates, "ssModResultsAll.csv", row.names=F)
@@ -65,8 +67,8 @@ library(RColorBrewer)
 
 
 cbPalette <- brewer.pal(8, "Dark2")
-trajectoryPlot <- ggplot(iteratesLogreg,
-                         aes(x=iter, y=value, colour=method)) 
+trajectoryPlot <- ggplot(iteratesMelted,
+                         aes(x=iter, y=value, colour=method)) +xlim(0,300)
 trajectoryPlot <- trajectoryPlot + geom_line(alpha=0.8) + 
   geom_point(data=iteratesMelted, mapping=aes(x=iter, y=value, shape=method))
 trajectoryPlot <- trajectoryPlot + 
