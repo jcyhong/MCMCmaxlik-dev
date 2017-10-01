@@ -18,9 +18,10 @@ phi=.2
 mu=10
 sigmaEta=3
 h=rep(0,50)
+sigmaU=1
 etat=rnorm(50,0,sd=sigmaEta)
-ut=rnorm(50)
-y=rep(ut[1]*exp(0/2),50)
+ut=rnorm(50,0,sd=sigmaU)
+y=rep(ut[1]*exp(h[1]/2),50)
 for(i in 2:50){
   h[i]=mu+phi*(h[i-1]-mu)+etat[i]
   y[i]=ut[i]*exp(h[i]/2)
@@ -31,19 +32,20 @@ write.csv(cbind(ut,h,y),"stocVolModData.csv")
 
 ```{r}
 svCode <- nimbleCode({
- ut[1] ~ dnorm(0,1)
+ ut[1] ~ dnorm(0,sd=sigmaU)
  etat[1] ~ dnorm(0,sd=sigmaEta)
-  #h[1] <- 0
+  
   y[1] <- ut[1]*exp(h[1]/2)
   for (i in 2:TT) {
     h[i] <- mu+phi*(h[i-1]-mu)+etat[i]
     y[i] <- ut[i]*exp(h[i]/2)
-     ut[i] ~ dnorm(0,1)
+     ut[i] ~ dnorm(0,sd=sigmaU)
       etat[i] ~ dnorm(0,sd=sigmaEta)
   }
   phi ~dunif(-.999,0.999)
   mu ~ dnorm(0, sd = 1000)
   sigmaEta~dunif(0, 1000)
+  sigmaU~dunif(0,2)
 })
 
 Consts <- list(TT = 50)
@@ -53,39 +55,41 @@ data <- list(
   y=y
 )
 
-inits <- list(phi=.5,mu=10,sigmaEta=5,ut=rep(2,50))
+inits <- list(phi=.5,mu=10,sigmaEta=5,sigmaU=1.5)
 
 
 ## build the model object
 svModel <- nimbleModel(svCode, constants = Consts,data=data,inits=inits)
+#svModel <- nimbleModel(svCode, constants = Consts,inits=inits)
 
-
+#svModel$simulate()
 
 ## put values in the top-level parameters
-# svModel$phi <- 0.5
-# svModel$mu <- 2.0
-# sigmaEta <- 2.0
+ #svModel$phi <- 0.5
+ #svModel$mu <- 2.0
+ #svModel$sigmaEta <- 2.0
+ #svModel$sigmaU<-1
 # 
 # ## calculate any dependencies that may be needed to simulate states and data
 # svModel$calculate(svModel$getDependencies( c('phi','mu','sigmaEta'), determOnly = TRUE))
 # 
 # 
 # ## use the model to simulate states and data
-# set.seed(12345)
-# svModel$simulate( svModel$getDependencies(c('h','y')))
+ #set.seed(12345)
+ #svModel$simulate( svModel$getDependencies(c('h','y')))
 # ## Look at what we got:
-# svModel$h
+ #svModel$h
 # svModel$y
 # svModel$setData('y')
 ## this wasn't working
 
 paramNodesSV <- svModel$getNodeNames(topOnly=T)
-paramNodesSV=paramNodesSV[-c(1:50)] ## remove the ut's
+#paramNodesSV=paramNodesSV[-c(1:50)] ## remove the ut's
 CsvModel <- compileNimble(svModel)
 ```
 
 ```{r compile}
-compiledFunsSVmodel <- buildMCMCmaxlik(svModel, paramNodesSV)
+compiledFunsSVmodel <- buildMCMCmaxlik(CsvModel, paramNodesSV)
 
 ```
 
@@ -97,8 +101,8 @@ compiledFunsSVmodel <- buildMCMCmaxlik(svModel, paramNodesSV)
 # Compile the necesvary functions.
 
 # need to make sure these are in the right order
-init <- c(0.75,20,1)
-boundary <- list(c(-.9999,0.9999),c(-1000,1000),c(0,1000))
+init <- c(0.75,20,1,1.5)
+boundary <- list(c(-.9999,0.9999),c(-1000,1000),c(0,1000),c(0,2))
 numMCMCSamples <- 300
 
 ptm <- proc.time()
@@ -110,14 +114,13 @@ resultsSVModFixed <- computeMLE(svModel, paramNodesSV,
                                maxIter=300,
                                boundary=boundary)
 timesSVModFixed <- proc.time() - ptm
-timesSVModFixed 
-#warning: problem initializing stochastic node, logProb less than -1e12
-#|-------------|-------------|-------------|-------------|
-#|-------------------------------------------------------|
-resultsSVModFixed$iter
-mean(tail(resultsSVModFixed$param[, 1], 20), trim=.2)  ##  
-mean(tail(resultsSVModFixed$param[, 2], 20), trim=.2)  ## 
-mean(tail(resultsSVModFixed$param[, 3], 20), trim=.2)  ## 
+timesSVModFixed  ## 17.365
+
+resultsSVModFixed$iter##  61
+mean(tail(resultsSVModFixed$param[, 1], 20), trim=.2)  ## 0.75 
+mean(tail(resultsSVModFixed$param[, 2], 20), trim=.2)  ## 20.00014
+mean(tail(resultsSVModFixed$param[, 3], 20), trim=.2)  ## 33.11213
+mean(tail(resultsSVModFixed$param[, 4], 20), trim=.2)  ## 1.766681
 
 save(resultsSVModFixed, file="svModFixed.RData")
 ```
@@ -133,11 +136,12 @@ resultsSVModSmallFixed <- computeMLE(svModel, paramNodesSV,
                                     maxIter=3000,
                                     boundary=boundary)
 timesSVModSmallFixed <- proc.time() - ptm ## 233.045 
-timesSVModSmallFixed   ## 811.290 
+timesSVModSmallFixed   ## 794.535 
 resultsSVModSmallFixed$iter ## 3000
 mean(tail(resultsSVModSmallFixed$param[, 1], 20), trim=.2)  ## 0.75
 mean(tail(resultsSVModSmallFixed$param[, 2], 20), trim=.2) ##  20.00034
-mean(tail(resultsSVModSmallFixed$param[, 3], 20), trim=.2)  ##  106.6361
+mean(tail(resultsSVModSmallFixed$param[, 3], 20), trim=.2)  ##  104.5691
+mean(tail(resultsSVModSmallFixed$param[, 4], 20), trim=.2)  ##  1.98686
 
 save(resultsSVModSmallFixed, file="svModSmallFixed.RData")
 ```
@@ -155,8 +159,10 @@ timesSVModAdadelta <- proc.time() - ptm
 timesSVModAdadelta  ## 20.699 
 #300
 mean(tail(resultsSVModAdadelta$param[, 1], 20), trim=.2)  ## 0.75
-mean(tail(resultsSVModAdadelta$param[, 2], 20), trim=.2)  ## 20.04093
-mean(tail(resultsSVModAdadelta$param[, 3], 20), trim=.2)  ## 8.19414
+mean(tail(resultsSVModAdadelta$param[, 2], 20), trim=.2)  ## 20.01456
+mean(tail(resultsSVModAdadelta$param[, 3], 20), trim=.2)  ## 11.08486
+mean(tail(resultsSVModAdadelta$param[, 4], 20), trim=.2)  ## 1.999751
+
 save(resultsSVModAdadelta, file="svModAdadelta.RData")
 
 ```
@@ -175,8 +181,10 @@ timesSVModAdam <- proc.time() - ptm
 timesSVModAdam  ## 26.909 
 ## 300
 mean(tail(resultsSVModAdam$param[, 1], 20), trim=.2)  ##  0.75
-mean(tail(resultsSVModAdam$param[, 2], 20), trim=.2)  ##22.53195
-mean(tail(resultsSVModAdam$param[, 3], 20), trim=.2)  ## 19.27253
+mean(tail(resultsSVModAdam$param[, 2], 20), trim=.2)  ##23.66279
+mean(tail(resultsSVModAdam$param[, 3], 20), trim=.2)  ## 17.24817
+mean(tail(resultsSVModAdam$param[, 4], 20), trim=.2)  ## 2
+
 save(resultsSVModAdam, file="svModAdam.RData")
 
 ```
