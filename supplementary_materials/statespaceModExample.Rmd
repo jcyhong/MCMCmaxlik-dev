@@ -14,7 +14,7 @@ library("MCMCmaxlik")
 ```
 
 
-```{r}
+```{r,eval=F}
 #ssModel$rho <- 0.5
 #ssModel$mu <- 5.0
 #ssModel$sigPN <- 5
@@ -34,7 +34,7 @@ for(i in 2:TT){
 }
 ```
 
-```{r}
+```{r,eval=F}
 ssCode <- nimbleCode({
   rho ~ dunif(-0.9999, 0.9999)
   #mu ~ dnorm(0, sd = 1000) # 0
@@ -86,6 +86,70 @@ write.csv(cbind(x,y),"statespaceModData.csv")
 paramNodesSS <- ssModel$getNodeNames(topOnly=T)
 CssModel <- compileNimble(ssModel)
 ```
+
+
+```{r,cache=T}
+set.seed(931154)
+rho=0.5
+sigPN=5
+sigOE=5
+x0=5
+TT=100
+x=rep(rnorm(1,rho*x0,sd=sqrt(sigPN^2/(1-rho*rho))),TT)
+y=rep(rnorm(1,x[1],sd=sigOE),TT)
+for(i in 2:TT){
+  x[i] =rnorm(1,rho * x[i - 1] , sd = sigPN)
+    y[i] =rnorm(1,x[i], sd = sigOE)
+}
+
+ssCode <- nimbleCode({
+  rho ~ dunif(-0.9999, 0.9999)
+  #mu ~ dnorm(0, sd = 1000) # 0
+  sigPN ~ dunif(1e-04, 100)
+  sigOE ~ dunif(1e-04, 100)
+  x0 ~dnorm(0, sd = 1000)
+  x[1] ~ dnorm(rho*x0, sd = sqrt(sigPN^2/(1-rho*rho)))
+  #x[1] ~ dnorm(rho*x0, sd = sigPN)
+  #x[1] ~ dnorm(mu, sd = sqrt(sigPN^2/(1-rho*rho)))
+  y[1] ~ dnorm(x[1], sd = sigOE)
+  for (i in 2:TT) {
+    #x[i] ~ dnorm(rho * (x[i - 1] - mu) + mu, sd = sigPN)
+    x[i] ~ dnorm(rho * x[i - 1] , sd = sigPN)
+    y[i] ~ dnorm(x[i], sd = sigOE)
+  }
+}) ## take out mu
+
+Consts <- list(TT = 100)
+
+ssModel <- nimbleModel(ssCode, constants = Consts)
+
+## put values in the top-level parameters
+ssModel$rho <- 0.5
+ssModel$x0 <- 5.0
+ssModel$sigPN <- 5
+ssModel$sigOE <- 5
+
+## calculate any dependencies that may be needed to simulate states and data
+ssModel$calculate(ssModel$getDependencies( c('rho','x0','sigPN','sigOE'), determOnly = TRUE))
+
+
+## use the model to simulate states and data
+set.seed(12345)
+ssModel$simulate( ssModel$getDependencies(c('x','y')))
+## Look at what we got:
+ssModel$x
+ssModel$y
+ssModel$setData('y')
+
+
+write.csv(cbind(ssModel$x,ssModel$y),"statespaceModData.csv")
+
+paramNodesSS <- ssModel$getNodeNames(topOnly=T)
+CssModel <- compileNimble(ssModel)
+
+
+```
+
 
 ```{r compile}
 compiledFunsSSmodel <- buildMCMCmaxlik(ssModel, paramNodesSS)
@@ -259,23 +323,12 @@ SSMod2 <- ssModel$newModel()
 latentNodes <- SSMod2$getNodeNames(latentOnly=TRUE, stochOnly=TRUE)
 
 
-box <- list(list(c('sigPN', 'sigOE'), c(1e-04, 100)),list(c("rho"),c(-0.9999, 0.9999)),list(c("x0"),c(-Inf,Inf)))
-SSModMCEM <- buildMCEM(model=SSMod2, latentNodes=latentNodes,
-                      boxConstraints=box) 
-
-#Error in buildMCEM(model = SSMod2, latentNodes = latentNodes, boxConstraints = box) : 
-#  latentNodes provided not found in model
-
+#box <- list(list(c('sigPN', 'sigOE'), c(1e-04, 100)),list(c("rho"),c(-0.9999, 0.9999)),list(c("x0"),c(-Inf,Inf)))
+SSModMCEM <- buildMCEM(model=SSMod2, latentNodes=latentNodes)
 ptm <- proc.time()
 resultsSSModMCEM <- SSModMCEM$run(initM = 1000)
 timeSSModMCEM <- proc.time() - ptm
-timeSSModMCEM  ## 358.430 
-# Iteration Number: 32.
-# Current number of MCMC iterations: 9046.
-# Parameter Estimates: 
-#         rho          mu       sigPN       sigOE 
-#    0.999899 1107.885603    4.597082    6.301182 
-# Convergence Criterion: 0.000284768.
+timeSSModMCEM  
 
 # Save outputs ------------------------
 save(resultsSSModMCEM, file="MCEM_SSMod.RData")
