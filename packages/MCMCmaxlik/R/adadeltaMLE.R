@@ -24,13 +24,18 @@
 
 adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit, 
                         boundary = NULL,
-                        postMode = F, trackEffSizeGrad = F,
+                        postMode = FALSE, trackEffSizeGrad = FALSE,
                         maxIter = 100, numMCMCSamples = 300, 
                         delta = 1e-04, 
                         burninFrac = 0.5,
                         eps = 1e-2, rho=0.9,
-                        blockSize = 20, runsThreshold = floor(blockSize / 5),
+                        skipConvCheck=TRUE,
+                        blockSize = 20, 
+                        runsThreshold = floor(blockSize / 5),
                         pValThreshold = 0.3) {
+  if (skipConvCheck) {
+    blockSize <- maxIter
+  }
   if (is.null(boundary)) {
     boundary=vector('list',length(paramNodes))
     for(i in 1:length(paramNodes)){

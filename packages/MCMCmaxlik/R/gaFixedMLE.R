@@ -28,14 +28,19 @@
 
 gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit, 
                        boundary=NULL,
-                       postMode = F, 
+                       postMode = FALSE, 
                        burninFrac = 0.5,
                        stepsize = 1, maxIter = 100, 
                        numMCMCSamples = 300, 
                        delta = 1e-04,
-                       trackEffSizeGrad=T,
+                       trackEffSizeGrad=FALSE,
+                       skipConvCheck=TRUE,
                        blockSize = 20, runsThreshold = floor(blockSize / 5),
                        pValThreshold = 0.3) {
+  
+  if (skipConvCheck) {
+    blockSize <- maxIter
+  }
   if (is.null(boundary)) {
     boundary=vector('list',length(paramNodes))
     for(i in 1:length(paramNodes)){

@@ -34,9 +34,12 @@ adagradMLE <- function(model, paramNodes, compiledFuns, paramInit,
                        numMCMCSamples = 10000, 
                        eta=0.01, delta = 1e-04, eps = 1e-2,
                        tol = 1e-04,
+                       skipConvCheck=T,
                        blockSize = 20, runsThreshold = floor(blockSize / 5),
                        pValThreshold = 0.3) {
-  
+  if (skipConvCheck) {
+    blockSize <- maxIter
+  }
   # Determine the boundary conditions.
   if (is.null(boundary)) {
     boundary=vector('list',length(paramNodes))

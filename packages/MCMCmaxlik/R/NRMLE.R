@@ -27,8 +27,13 @@ NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
                   postMode = F, trackEffSizeGrad = F, burninFrac = 0.5,
                   stepsize = 1, maxIter = 100, numMCMCSamples = 10000, 
                   delta = 1e-04, deltaHess=1e-02, tol = 1e-04,
+                  skipConvCheck=TRUE,
                   blockSize = 20, runsThreshold = floor(blockSize / 5),
                   pValThreshold = 0.3) {
+  
+  if (skipConvCheck) {
+    blockSize <- maxIter
+  }
   
   if(is.null(boundary)){
     boundary=vector('list',length(paramNodes))

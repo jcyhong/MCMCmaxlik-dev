@@ -29,9 +29,15 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
                     burninFrac=0.5, burninFrac1D=0.5,
                     kern="gaussian", bdwth="nrd0",
                     tol=1e-04,
+                    skipConvCheck=TRUE,
                     blockSize = 20, runsThreshold = floor(blockSize / 5),
                     pValThreshold = 0.3,
                     returnHess = F) {
+  
+  if (skipConvCheck) {
+    blockSize <- maxIter
+  }
+  
   if(is.null(boundary)){
     boundary=vector('list',length(paramNodes))
     for(i in 1:length(paramNodes)){

@@ -31,14 +31,19 @@
 
 adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
                     boundary=NULL,
-                    postMode = F, trackEffSizeGrad = F,
+                    postMode = FALSE, trackEffSizeGrad = FALSE,
                     maxIter = 300, numMCMCSamples = 20, 
                     delta = 1e-04, 
                     burninFrac = 0.5,
                     stepsize=0.3,
                     eps=1e-4, beta1=0.9, beta2=0.999,
+                    skipConvCheck=TRUE,
                     blockSize = 20, runsThreshold = floor(blockSize / 5),
                     pValThreshold = 0.3) {
+  
+  if (skipConvCheck) {
+    blockSize <- maxIter
+  }
   
   # Determine the boundary conditions.
   if (is.null(boundary)) {
