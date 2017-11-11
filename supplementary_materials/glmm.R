@@ -97,11 +97,29 @@ resultsGLMMFixed <- computeMLE(glmmMod, paramNodes,
                                compiledFuns=compiledFunsglmm,
                                numMCMCSamples=numMCMCSamples,
                                maxIter=300,
-                               boundary=boundary)
-timeGLMMFixed <- proc.time() - ptm  ##  103.498 
+                               boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
+timeGLMMFixed <-proc.time() - ptm 
+timeGLMMFixed ## 102.840 
 save(resultsGLMMFixed, file="GLMMFixed.RData")
 
 apply(tail(resultsGLMMFixed$param, 20), 2, mean, trim=0.2)
+#0.8371804  0.2690307 -1.5762730  0.8357959  1.7182524  2.2435778
+
+ptm <- proc.time()
+resultsGLMMFixed2 <- computeMLE(glmmMod, paramNodes,
+                               method="fixed", paramInit=init,
+                               stepsize=0.05,
+                               compiledFuns=compiledFunsglmm,
+                               numMCMCSamples=numMCMCSamples,
+                               maxIter=300,
+                               boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
+timeGLMMFixed2 <- proc.time() - ptm  
+timeGLMMFixed2 ##  102.760 
+resultsGLMMFixed2$iter ## 300
+save(resultsGLMMFixed2, file="GLMMFixedCC.RData")
+
+apply(tail(resultsGLMMFixed$param, 20), 2, mean, trim=0.2)
+#0.8371804  0.2690307 -1.5762730  0.8357959  1.7182524  2.2435778
 
 # 2. Small fixed step size ----------------------------------------
 ptm <- proc.time()
@@ -111,11 +129,60 @@ resultsGLMMFixedSmall <- computeMLE(glmmMod, paramNodes,
                                     compiledFuns=compiledFunsglmm,
                                     numMCMCSamples=numMCMCSamples,
                                     maxIter=3000,
-                                    boundary=boundary)
-timeGLMMFixedSmall <- proc.time() - ptm  ## 104.788 
-save(resultsGLMMFixedSmall, file="GLMMFixedSmall.RData")
+                                    boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
+timeGLMMFixedSmall <- proc.time() - ptm  
+timeGLMMFixedSmall ## 1019.076 
+save(resultsGLMMFixedSmall, file="GLMMFixedSmall3000.RData")
 
 apply(tail(resultsGLMMFixedSmall$param, 20), 2, mean, trim=0.2)
+##0.8816105  0.2855453 -1.6549337  0.8874643  1.5867583  1.3504009
+
+ptm <- proc.time()
+resultsGLMMFixedSmall2 <- computeMLE(glmmMod, paramNodes,
+                                    method="fixed", paramInit=init,
+                                    stepsize=0.005,
+                                    compiledFuns=compiledFunsglmm,
+                                    numMCMCSamples=numMCMCSamples,
+                                    maxIter=3000,
+                                    boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
+timeGLMMFixedSmall2 <- proc.time() - ptm 
+timeGLMMFixedSmall2 ## 327.310 
+resultsGLMMFixedSmall2$iter ## 971
+save(resultsGLMMFixedSmall2, file="GLMMFixedSmallCC3000.RData")
+
+apply(tail(resultsGLMMFixedSmall2$param, 20), 2, mean, trim=0.2)
+#0.8603595  0.2776129 -1.6058155  0.8543346  1.8159546  1.5992581
+
+ptm <- proc.time()
+resultsGLMMFixedSmall3 <- computeMLE(glmmMod, paramNodes,
+                                    method="fixed", paramInit=init,
+                                    stepsize=0.005,
+                                    compiledFuns=compiledFunsglmm,
+                                    numMCMCSamples=numMCMCSamples,
+                                    maxIter=300,
+                                    boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
+timeGLMMFixedSmall3 <- proc.time() - ptm  
+timeGLMMFixedSmall3 ## 101.730 
+save(resultsGLMMFixedSmall3, file="GLMMFixedSmall.RData")
+
+apply(tail(resultsGLMMFixedSmall3$param, 20), 2, mean, trim=0.2)
+## 0.8526400  0.2687585 -1.6110869  0.8586432  1.6645518  1.7643731
+
+ptm <- proc.time()
+resultsGLMMFixedSmall4 <- computeMLE(glmmMod, paramNodes,
+                                     method="fixed", paramInit=init,
+                                     stepsize=0.005,
+                                     compiledFuns=compiledFunsglmm,
+                                     numMCMCSamples=numMCMCSamples,
+                                     maxIter=300,
+                                     boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
+timeGLMMFixedSmall4 <- proc.time() - ptm  
+timeGLMMFixedSmall4 ## 100.038 
+resultsGLMMFixedSmall4$iter ## 300
+save(resultsGLMMFixedSmall4, file="GLMMFixedSmallCC.RData")
+
+apply(tail(resultsGLMMFixedSmall4$param, 20), 2, mean, trim=0.2)
+#0.8482261  0.2738440 -1.5956676  0.8475491  1.7945180  1.8507742
 
 # 3. Adadelta ----------------------------------------
 ptm <- proc.time()
@@ -124,11 +191,29 @@ resultsAdadelta <- computeMLE(glmmMod, paramNodes,
                               compiledFuns=compiledFunsglmm,
                               numMCMCSamples=numMCMCSamples,
                               maxIter=300,
-                              boundary=boundary)
-timeGLMMAdadelta <- proc.time() - ptm  ## 107.366 
+                              boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
+timeGLMMAdadelta <- proc.time() - ptm 
+timeGLMMAdadelta ## 101.764 
 save(resultsAdadelta, file="GLMMAdadelta.RData")
 
 apply(tail(resultsAdadelta$param, 20), 2, mean, trim=0.2)
+# 1.0754894  0.3623355 -1.9918989  1.0855375  1.0004103  0.4887503
+
+ptm <- proc.time()
+resultsAdadelta2 <- computeMLE(glmmMod, paramNodes,
+                              method="adadelta", paramInit=init,
+                              compiledFuns=compiledFunsglmm,
+                              numMCMCSamples=numMCMCSamples,
+                              maxIter=300,
+                              boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
+timeGLMMAdadelta2 <- proc.time() - ptm  
+timeGLMMAdadelta2 ## 97.762 
+
+resultsAdadelta2$iter ## 285
+save(resultsAdadelta2, file="GLMMAdadeltaCC.RData")
+
+apply(tail(resultsAdadelta2$param, 20), 2, mean, trim=0.2)
+#1.0380292  0.3586400 -1.9700764  1.0516159  0.8552225  0.6292048
 
 # 4. Adam ----------------------------------------
 ptm <- proc.time()
@@ -137,11 +222,28 @@ resultsAdam <- computeMLE(glmmMod, paramNodes,
                           compiledFuns=compiledFunsglmm,
                           numMCMCSamples=numMCMCSamples,
                           maxIter=300,
-                          boundary=boundary)
-timeGLMMAdam <- proc.time() - ptm   ## 107.962 
+                          boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
+timeGLMMAdam <- proc.time() - ptm   
+timeGLMMAdam ## 103.482 
 save(resultsAdam, file="GLMMAdam.RData")
 
 apply(tail(resultsAdam$param, 20), 2, mean, trim=0.2)
+#0.8357023  0.2757600 -1.5892911  0.8443124  2.8834021  1.4572084
+
+ptm <- proc.time()
+resultsAdam2 <- computeMLE(glmmMod, paramNodes,
+                          method="adam", paramInit=init,
+                          compiledFuns=compiledFunsglmm,
+                          numMCMCSamples=numMCMCSamples,
+                          maxIter=300,
+                          boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
+timeGLMMAdam2 <- proc.time() - ptm 
+timeGLMMAdam2 ##  102.562 
+resultsAdam2$iter ## 300
+save(resultsAdam2, file="GLMMAdamCC.RData")
+
+apply(tail(resultsAdam2$param, 20), 2, mean, trim=0.2)
+#0.8814696  0.2821036 -1.6574235  0.8878936  1.4115316  1.4581775
 
 # 5. Newton-Raphson ----------------------------------------
 ptm <- proc.time()
@@ -151,8 +253,20 @@ resultsNR <- computeMLE(glmmMod, paramNodes=paramNodes,
                         numMCMCSamples=numMCMCSamples,
                         tol=1e-20,
                         maxIter=300,
-                        boundary=boundary)
+                        boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
 timeGLMMNR <- proc.time() - ptm 
+## error
+
+
+ptm <- proc.time()
+resultsNR2 <- computeMLE(glmmMod, paramNodes=paramNodes,
+                        method="NR", paramInit=init,
+                        compiledFuns=compiledFunsglmm,
+                        numMCMCSamples=numMCMCSamples,
+                        tol=1e-20,
+                        maxIter=300,
+                        boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
+timeGLMMNR2 <- proc.time() - ptm 
 ## error
 
 # 6. 1-D sampling ----------------------------------------
@@ -161,11 +275,27 @@ results1D <- computeMLE(glmmMod, paramNodes,
                         method="ga1D", paramInit=init,
                         compiledFuns=compiledFunsglmm,
                         numMCMCSamples=numMCMCSamples,
-                        maxIter=300)
-timeGLMM1D <- proc.time() - ptm ## 511.821 
+                        maxIter=300,skipConvCheck=T)
+timeGLMM1D <- proc.time() - ptm 
+timeGLMM1D ## 550.234 
 save(results1D, file="GLMM1D.Rdata")
 
 apply(tail(results1D$param, 20), 2, mean, trim=0.2)
+#0.8918794  0.2916108 -1.6772665  0.8583025  0.8958334  5.1852529
+
+ptm <- proc.time()
+results1D2 <- computeMLE(glmmMod, paramNodes,
+                        method="ga1D", paramInit=init,
+                        compiledFuns=compiledFunsglmm,
+                        numMCMCSamples=numMCMCSamples,
+                        maxIter=300,skipConvCheck=T)
+timeGLMM1D2 <- proc.time() - ptm 
+timeGLMM1D2 ## 545.236 
+results1D2$iter ## 300
+save(results1D2, file="GLMM1DCC.Rdata")
+
+apply(tail(results1D2$param, 20), 2, mean, trim=0.2)
+## 0.7640408  0.2326564 -1.4693103  0.7794910  3.8002812  4.3891180
 
 
 ptm <- proc.time()
@@ -174,32 +304,32 @@ sal <- glmm(Mate ~ 0 + Cross, random=list(~ 0 + Female,
             varcomps.names=c("F", "M"), data=salamander,
             family.glmm=bernoulli.glmm, m=10^5, debug=TRUE)
 glmmTime <- proc.time() - ptm 
-glmmTime ## 1181.431 
+glmmTime ## 813.043 
 summary(sal)
 save(sal, file="glmmMod.RData")
 
 # Call:
-#   glmm(fixed=Mate ~ 0 + Cross, random=list(~0 + Female, ~0 + 
-#        Male), varcomps.names=c("F", "M"), data=salamander, 
-#        family.glmm=bernoulli.glmm, m=10^5, debug=TRUE)
+#   glmm(fixed = Mate ~ 0 + Cross, random = list(~0 + Female, ~0 + 
+#                                                  Male), varcomps.names = c("F", "M"), data = salamander, family.glmm = bernoulli.glmm, 
+#        m = 10^5, debug = TRUE)
 # 
 # 
 # Link is: "logit (log odds)"
 # 
 # Fixed Effects:
 #   Estimate Std. Error z value Pr(>|z|)    
-# CrossR/R   0.9880     0.3624   2.726  0.00641 ** 
-#   CrossR/W   0.3268     0.4103   0.797  0.42564    
-# CrossW/R  -1.9791     0.4855  -4.077 4.57e-05 ***
-#   CrossW/W   1.0599     0.4054   2.614  0.00894 ** 
+# CrossR/R   0.9964     0.3871   2.574   0.0101 *  
+#   CrossR/W   0.3410     0.4363   0.781   0.4345    
+# CrossW/R  -1.8957     0.4335  -4.373 1.23e-05 ***
+#   CrossW/W   1.0173     0.4860   2.093   0.0363 *  
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 # 
 # 
 # Variance Components for Random Effects (P-values are one-tailed):
-#   Estimate Std. Error z value Pr(>|z|)/2    
-# F   1.3082     0.3665   3.570   0.000179 ***
-#   M   1.4909     0.6052   2.464   0.006875 ** 
+#   Estimate Std. Error z value Pr(>|z|)/2   
+# F   1.2832     0.5569   2.304    0.01061 * 
+#   M   1.1525     0.4199   2.745    0.00303 **
 #   ---
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
@@ -207,12 +337,11 @@ ptm <- proc.time()
 sal2=glmer(Mate~ -1 + Cross + (1|Female) + (1|Male),
            data=salamander, family=binomial)
 glmerTime <- proc.time() - ptm 
-glmerTime ## 0.466 
+glmerTime ## 0.404  
 summary(sal2)
 save(sal2, file="glmerMod.RData")
 
-# Generalized linear mixed model fit by maximum likelihood 
-# (Laplace Approximation) ['glmerMod']
+# Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
 # Family: binomial  ( logit )
 # Formula: Mate ~ -1 + Cross + (1 | Female) + (1 | Male)
 # Data: salamander
@@ -244,19 +373,19 @@ save(sal2, file="glmerMod.RData")
 # CrossR/W  0.280              
 # CrossW/R  0.112 -0.019       
 # CrossW/W  0.042  0.249  0.145
-# 
-# 
 
 set.seed(32856)
-source("MCEM_with_output.R")
+#source("MCEM_with_output.R")
 glmmNew <- glmmMod$newModel()
 latentNodes <- glmmNew$getNodeNames(latentOnly=TRUE, stochOnly=TRUE)
 
-glmmMCEM <- buildMCEM(model=glmmNew, latentNodes=latentNodes,
-                      theta0=rep(2, 6)) 
+#glmmMCEM <- buildMCEM(model=glmmNew, latentNodes=latentNodes,
+#                      theta0=rep(2, 6)) 
+
+glmmMCEM <- buildMCEM(model=glmmNew, latentNodes=latentNodes) 
 
 ptm <- proc.time()
-resultsMCEM <- glmmMCEM()
+resultsMCEM <- glmmMCEM$run(initM = 1000)
 timeGLMMMCEM <- proc.time() - ptm
 
 save(resultsMCEM, "MCEM_GLMM.RData")
@@ -264,13 +393,89 @@ save(resultsMCEM, "MCEM_GLMM.RData")
 timeMCEM 
 
 
-## killed it after
-## iter 42
-# beta1      beta2      beta3      beta4       varF       varM 
-# 0.8439873  0.2744783 -1.5834728  0.8501573  1.8215415  1.8495618 
-# Convergence Criterion: 0.008104164.
-# user   system  elapsed 
-# 9347.784   22.710 9393.257
+## killed it after an hour or so
+
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Iteration Number: 1.
+# Current number of MCMC iterations: 1000.
+# Parameter Estimates: 
+#   beta1      beta2      beta3      beta4       varF       varM 
+# 0.7719557  0.3153691 -1.2421619  0.7727807  4.8870236  4.9359067 
+# Convergence Criterion: 1.001.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Iteration Number: 2.
+# Current number of MCMC iterations: 1000.
+# Parameter Estimates: 
+#   beta1      beta2      beta3      beta4       varF       varM 
+# 0.7560798  0.2426937 -1.4150895  0.7603411  4.8581485  4.9220263 
+# Convergence Criterion: 0.1776775.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Monte Carlo error too big: increasing MCMC sample size.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Iteration Number: 3.
+# Current number of MCMC iterations: 1250.
+# Parameter Estimates: 
+#   beta1      beta2      beta3      beta4       varF       varM 
+# 0.7566014  0.2365373 -1.4296400  0.7556359  4.9064599  4.8710893 
+# Convergence Criterion: 0.04049478.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Monte Carlo error too big: increasing MCMC sample size.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Monte Carlo error too big: increasing MCMC sample size.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Iteration Number: 4.
+# Current number of MCMC iterations: 2188.
+# Parameter Estimates: 
+#   beta1      beta2      beta3      beta4       varF       varM 
+# 0.7537331  0.2449870 -1.4282083  0.7519991  4.8582776  4.8518666 
+# Convergence Criterion: 0.02039753.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Iteration Number: 5.
+# Current number of MCMC iterations: 2188.
+# Parameter Estimates: 
+#   beta1      beta2      beta3      beta4       varF       varM 
+# 0.7605328  0.2403929 -1.4287206  0.7614988  4.8453013  4.8852084 
+# Convergence Criterion: 0.01239757.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Monte Carlo error too big: increasing MCMC sample size.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Monte Carlo error too big: increasing MCMC sample size.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Iteration Number: 6.
+# Current number of MCMC iterations: 4298.
+# Parameter Estimates: 
+#   beta1      beta2      beta3      beta4       varF       varM 
+# 0.7569682  0.2437938 -1.4269022  0.7564405  4.8582642  4.8921791 
+# Convergence Criterion: 0.003558387.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Monte Carlo error too big: increasing MCMC sample size.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Iteration Number: 7.
+# Current number of MCMC iterations: 6197.
+# Parameter Estimates: 
+#   beta1      beta2      beta3      beta4       varF       varM 
+# 0.7539376  0.2429794 -1.4295914  0.7562341  4.8676279  4.9083186 
+# Convergence Criterion: 0.003545863.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+#   Monte Carlo error too big: increasing MCMC sample size.
+# |-------------|-------------|-------------|-------------|
+#   |-------------------------------------------------------|
+
+
 
 #save(resultsMCEM, file="MCEM_GLMM.RData")
 
