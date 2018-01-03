@@ -58,6 +58,8 @@ resultsPumpFixed <- computeMLE(pump, paramNodesPump,
                                stepsize=0.05,
                                numMCMCSamples=numMCMCSamples,
                                maxIter=300,
+                               blockSize=20,
+                               trackEffSizeGrad=F,
                                boundary=boundary)
 timePumpFixed <- proc.time() - ptm
 timePumpFixed ##  4.475 
