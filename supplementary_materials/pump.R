@@ -399,10 +399,10 @@ resultsPumpMCEM
 save(resultsPumpMCEM, file="MCEM_pump.RData")
 
 
-timeInfo <- cbind(c(timePumpFixed, timePumpSmallFixed,
-                    timePumpAdadelta, timePumpAdam,
-                    timePumpNR, timePump1D, timePumpMCEM),
-                  c("fixed", "smallFixed", "adadelta", "adam",
-                    "NR", "1D", "mcem"))
-
-write.csv(timeInfo, "timePump.csv", row.names=F)
+# timeInfo <- cbind(c(timePumpFixed, timePumpSmallFixed,
+#                     timePumpAdadelta, timePumpAdam,
+#                     timePumpNR, timePump1D, timePumpMCEM),
+#                   c("fixed", "smallFixed", "adadelta", "adam",
+#                     "NR", "1D", "mcem"))
+# 
+# write.csv(timeInfo, "timePump.csv", row.names=F)
