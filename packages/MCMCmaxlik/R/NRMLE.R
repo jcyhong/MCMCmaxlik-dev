@@ -24,17 +24,18 @@
 #' compileMLE()
 
 NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
-                  postMode = F, trackEffSizeGrad = F, burninFrac = 0.5,
+                  postMode = FALSE, trackEffSizeGrad = FALSE, burninFrac = 0.5,
                   stepsize = 1, maxIter = 100, numMCMCSamples = 10000, 
                   delta = 1e-04, deltaHess=1e-02, tol = 1e-04,
-                  skipConvCheck=TRUE,
+                  skipConvCheck=FALSE,
+                  runUntilMaxIter=TRUE,
                   blockSize = 20, runsThreshold = floor(blockSize / 5),
-                  pValThreshold = 0.3) {
+                  pValThreshold = 0.3,
+                  returnHess = F) {
   
-  if (skipConvCheck) {
-    blockSize <- maxIter
-  }
   
+  ptm <- proc.time()
+
   if(is.null(boundary)){
     boundary=vector('list',length(paramNodes))
     for(i in 1:length(paramNodes)){
@@ -45,6 +46,7 @@ NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
   
   thetaCur <- paramInit
   thetaNew <- paramInit
+  converge <- F
   iter <- 1
   thr <- Inf
   paramMatrix <- matrix(nrow = maxIter, ncol = length(paramInit))
@@ -90,24 +92,76 @@ NRMLE <- function(model, paramNodes, compiledFuns, paramInit, boundary=NULL,
                  min(effSizesGrad[iter, ]), 
                  "\n")) 
     }
+    
+    iter <- iter + 1
+    
     # Convergence test
-    if (iter > 2 * blockSize) {
+    if (!converge & iter > 2 * blockSize) {
       # 1. Check oscillating behaviors.
-      runsResults <- checkRuns(paramMatrix[(iter - blockSize + 1):iter, ],
+      runsResults <- checkRuns(paramMatrix[(iter - blockSize):(iter - 1), ],
                                runsThreshold)
       if (runsResults$pass) {
         # 2. Check whether the average stays constant.
         blockResults <- checkBlocks(
-          paramMatrix[(iter - 2 * blockSize + 1):(iter - blockSize), ],
-          paramMatrix[(iter - blockSize + 1):iter, ],
+          paramMatrix[(iter - 2 * blockSize):(iter - blockSize - 1), ],
+          paramMatrix[(iter - blockSize):(iter - 1), ],
           pValThreshold)
         if (blockResults$pass) {
+          convergence.time <- proc.time() - ptm
+          convergence.iter <- iter - 1
           converge <- T
-          break 
         }
+        if (!runUntilMaxIter) break
       }
     }
-    iter <- iter + 1
   }
-  return(list(param = paramMatrix, iter = iter, hess = approxHessian))
+  
+  if (!skipConvCheck & iter > 2 * blockSize) {
+    cat("*** Convergence diagnostics ***\n")
+    if (converge) {
+      cat(paste0("Converged at Iteration ", convergence.iter, "\n")) 
+    }
+    cat(paste0("Number(s) of runs (block size = ", blockSize, "): ", 
+               paste0(runsResults$numRuns, collapse=", "),
+               "\n"))
+    if (runsResults$pass) {
+      cat(paste0("p-value from 2-sample t-test for block comparisons: ",
+                 paste(round(blockResults$pVal, 3), collapse=", "),
+                 "\n")) 
+    }
+    
+    if (!converge) {
+      cat("*** Warning: Non-convergence ***\n")
+      cat("Use a different starting point or increase the MCMC sample size.\n")
+    }
+  }
+  
+  paramMatrix <- na.omit(paramMatrix)
+  if (iter > 20) {
+    MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
+  } else {
+    MLE <- tail(paramMatrix, 1)[1,]
+  }
+  
+  results <- list(param = paramMatrix,
+                  MLE = MLE, 
+                  execution.time=proc.time() - ptm,
+                  execution.iter=iter - 1)
+  
+  if (trackEffSizeGrad) {
+    results <- c(results, list(effSizesGrad = effSizesGrad))
+  }
+  
+  if (!skipConvCheck & iter > 2 * blockSize & converge) {
+    results <- c(results, 
+                 list(convergence.time=convergence.time,
+                      convergence.iter=convergence.iter))
+  }
+  
+  if (returnHess) {
+    approxHessian <- compiledFuns$computeHess$run(1e-4, postMode, burninFrac)
+    results <- c(results, list(hess=approxHessian))
+  }
+  
+  return(results)
 }

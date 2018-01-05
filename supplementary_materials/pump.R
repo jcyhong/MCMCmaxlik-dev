@@ -51,38 +51,40 @@ init <- c(10, 10)
 boundary <- list(c(0.05, 10000), c(0.05, 10000))
 numMCMCSamples <- 300
 
-ptm <- proc.time()
 resultsPumpFixed <- computeMLE(pump, paramNodesPump,
                                method="fixed", paramInit=init,
                                compiledFuns=compiledFunsPump,
                                stepsize=0.05,
                                numMCMCSamples=numMCMCSamples,
                                maxIter=300,
-<<<<<<< HEAD
-                               blockSize=20,
-                               trackEffSizeGrad=F,
                                boundary=boundary)
-=======
-                               boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
->>>>>>> 07e88e0e8ef50a723b60ca9ff1d27acfa39cc7f4
-timePumpFixed <- proc.time() - ptm
-timePumpFixed ##  2.946 
-resultsPumpFixed$iter ## 300
-mean(tail(resultsPumpFixed$param[, 1], 20), trim=.2) ## 0.8635993
-mean(tail(resultsPumpFixed$param[, 2], 20), trim=.2) ## 1.369763
+
+# Execution time/iteration
+resultsPumpFixed$execution.time
+resultsPumpFixed$execution.iter
+# Convergence time/iteration
+resultsPumpFixed$convergence.time
+resultsPumpFixed$convergence.iter
+
+mean(tail(resultsPumpFixed$param[, 1], 20), trim=.2)
+mean(tail(resultsPumpFixed$param[, 2], 20), trim=.2)
 save(resultsPumpFixed, file="pumpFixed.RData")
 
 ptm <- proc.time()
 resultsPumpFixed2 <- computeMLE(pump, paramNodesPump,
-                               method="fixed", paramInit=init,
-                               compiledFuns=compiledFunsPump,
-                               stepsize=0.05,
-                               numMCMCSamples=numMCMCSamples,
-                               maxIter=300,
-                               boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
-timePumpFixed2 <- proc.time() - ptm
-timePumpFixed2 ##  3.037 
-resultsPumpFixed2$iter ## 300
+                                method="fixed", paramInit=init,
+                                compiledFuns=compiledFunsPump,
+                                stepsize=0.05,
+                                numMCMCSamples=numMCMCSamples,
+                                maxIter=300,
+                                boundary=boundary)
+# Execution time/iteration
+resultsPumpFixed2$execution.time
+resultsPumpFixed2$execution.iter
+# Convergence time/iteration
+resultsPumpFixed2$convergence.time
+resultsPumpFixed2$convergence.iter
+
 mean(tail(resultsPumpFixed2$param[, 1], 20), trim=.2) ## 0.866495
 mean(tail(resultsPumpFixed2$param[, 2], 20), trim=.2) ## 1.38381
 save(resultsPumpFixed2, file="pumpFixedCC.RData")
@@ -94,143 +96,143 @@ resultsPumpSmallFixed <- computeMLE(pump, paramNodesPump,
                                     compiledFuns=compiledFunsPump,
                                     stepsize=0.005,
                                     numMCMCSamples=numMCMCSamples,
-                                    maxIter=3000,
-                                    boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
-timePumpSmallFixed <- proc.time() - ptm
-timePumpSmallFixed ## 29.164 
-resultsPumpSmallFixed$iter ## 3000
+                                    maxIter=300,
+                                    boundary=boundary)
+# Execution time/iteration
+resultsPumpSmallFixed$execution.time
+resultsPumpSmallFixed$execution.iter
+# Convergence time/iteration
+resultsPumpSmallFixed$convergence.time
+resultsPumpSmallFixed$convergence.iter
+
 mean(tail(resultsPumpSmallFixed$param[, 1], 20), trim=.2) ## 0.8460056
 mean(tail(resultsPumpSmallFixed$param[, 2], 20), trim=.2) ## 1.325574
 save(resultsPumpSmallFixed, file="pumpSmallFixed.RData")
 
 ptm <- proc.time()
-resultsPumpSmallFixed2 <- computeMLE(pump, paramNodesPump,
-                                    method="fixed", paramInit=init,
-                                    compiledFuns=compiledFunsPump,
-                                    stepsize=0.005,
-                                    numMCMCSamples=numMCMCSamples,
-                                    maxIter=3000,
-                                    boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
-timePumpSmallFixed2 <- proc.time() - ptm
-timePumpSmallFixed2 ## 30.356 
-resultsPumpSmallFixed2$iter ## 3000
+resultsPumpSmallFixed2 <-  computeMLE(pump, paramNodesPump,
+                                      method="fixed", paramInit=init,
+                                      compiledFuns=compiledFunsPump,
+                                      stepsize=0.005,
+                                      numMCMCSamples=numMCMCSamples,
+                                      maxIter=300,
+                                      boundary=boundary)
+# Execution time/iteration
+resultsPumpSmallFixed2$execution.time
+resultsPumpSmallFixed2$execution.iter
+# Convergence time/iteration
+resultsPumpSmallFixed2$convergence.time
+resultsPumpSmallFixed2$convergence.iter
+
 mean(tail(resultsPumpSmallFixed2$param[, 1], 20), trim=.2) ## 0.8457023
 mean(tail(resultsPumpSmallFixed2$param[, 2], 20), trim=.2) ## 1.321205
 save(resultsPumpSmallFixed2, file="pumpSmallFixedCC.RData")
 
-ptm <- proc.time()
-resultsPumpSmallFixed3 <- computeMLE(pump, paramNodesPump,
-                                    method="fixed", paramInit=init,
-                                    compiledFuns=compiledFunsPump,
-                                    stepsize=0.005,
-                                    numMCMCSamples=numMCMCSamples,
-                                    maxIter=300,
-                                    boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
-timePumpSmallFixed3 <- proc.time() - ptm
-timePumpSmallFixed3 ## 2.752 
-resultsPumpSmallFixed3$iter ## 300
-mean(tail(resultsPumpSmallFixed3$param[, 1], 20), trim=.2) ##  4.676562
-mean(tail(resultsPumpSmallFixed3$param[, 2], 20), trim=.2) ##  11.2526
-save(resultsPumpSmallFixed3, file="pumpSmallFixed300.RData")
-
-ptm <- proc.time()
-resultsPumpSmallFixed4 <- computeMLE(pump, paramNodesPump,
-                                    method="fixed", paramInit=init,
-                                    compiledFuns=compiledFunsPump,
-                                    stepsize=0.005,
-                                    numMCMCSamples=numMCMCSamples,
-                                    maxIter=300,
-                                    boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
-timePumpSmallFixed4 <- proc.time() - ptm
-timePumpSmallFixed4 ## 2.873 
-resultsPumpSmallFixed4$iter ## 300
-mean(tail(resultsPumpSmallFixed4$param[, 1], 20), trim=.2) ##  4.672564
-mean(tail(resultsPumpSmallFixed4$param[, 2], 20), trim=.2) ##11.25466
-save(resultsPumpSmallFixed4, file="pumpSmallFixed300CC.RData")
-
 # 3. Adadelta ----------------------------------------
-ptm <- proc.time()
 resultsPumpAdadelta <- computeMLE(pump, paramNodesPump,
                                   method="adadelta", paramInit=init,
                                   compiledFuns=compiledFunsPump,
                                   numMCMCSamples=numMCMCSamples,
                                   maxIter=300,
-                                  boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
-timePumpAdadelta <- proc.time() - ptm
-timePumpAdadelta ## 3.129 
+                                  boundary=boundary)
+# Execution time/iteration
+resultsPumpAdadelta$execution.time
+resultsPumpAdadelta$execution.iter
+# Convergence time/iteration
+resultsPumpAdadelta$convergence.time
+resultsPumpAdadelta$convergence.iter
+
 mean(tail(resultsPumpAdadelta$param[, 1], 20), trim=.2) ## 1.075411
 mean(tail(resultsPumpAdadelta$param[, 2], 20), trim=.2) ## 1.890135
 save(resultsPumpAdadelta, file="pumpAdadelta.RData")
 
-ptm <- proc.time()
 resultsPumpAdadelta2 <- computeMLE(pump, paramNodesPump,
-                                  method="adadelta", paramInit=init,
-                                  compiledFuns=compiledFunsPump,
-                                  numMCMCSamples=numMCMCSamples,
-                                  maxIter=300,
-                                  boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
-timePumpAdadelta2 <- proc.time() - ptm
-timePumpAdadelta2 ## 1.110 
-resultsPumpAdadelta2$iter ## 108
+                                   method="adadelta", paramInit=init,
+                                   compiledFuns=compiledFunsPump,
+                                   numMCMCSamples=numMCMCSamples,
+                                   maxIter=300,
+                                   boundary=boundary)
+
+# Execution time/iteration
+resultsPumpAdadelta2$execution.time
+resultsPumpAdadelta2$execution.iter
+# Convergence time/iteration
+resultsPumpAdadelta2$convergence.time
+resultsPumpAdadelta2$convergence.iter
+
 mean(tail(resultsPumpAdadelta2$param[, 1], 20), trim=.2) ## 1.089937
 mean(tail(resultsPumpAdadelta2$param[, 2], 20), trim=.2) ## 1.904102
 save(resultsPumpAdadelta2, file="pumpAdadeltaCC.RData")
 
 # 4. Adam ----------------------------------------
-ptm <- proc.time()
 resultsPumpAdam <- computeMLE(pump, paramNodesPump,
                               method="adam", paramInit=init,
                               compiledFuns=compiledFunsPump,
                               numMCMCSamples=numMCMCSamples,
                               maxIter=300,
-                              boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
-timePumpAdam <- proc.time() - ptm
-timePumpAdam ##  3.100 
+                              boundary=boundary)
+# Execution time/iteration
+resultsPumpAdam$execution.time
+resultsPumpAdam$execution.iter
+# Convergence time/iteration
+resultsPumpAdam$convergence.time
+resultsPumpAdam$convergence.iter
+
 mean(tail(resultsPumpAdam$param[, 1], 20), trim=.2) ## 0.8193667
 mean(tail(resultsPumpAdam$param[, 2], 20), trim=.2) ## 1.257927
 save(resultsPumpAdam, file="pumpAdam.RData")
 
-ptm <- proc.time()
-resultsPumpAdam2 <- computeMLE(pump, paramNodesPump,
+resultsPumpAdam <- computeMLE(pump, paramNodesPump,
                               method="adam", paramInit=init,
                               compiledFuns=compiledFunsPump,
                               numMCMCSamples=numMCMCSamples,
                               maxIter=300,
-                              boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
-timePumpAdam2 <- proc.time() - ptm
-timePumpAdam2 ##  3.100  
-resultsPumpAdam2$iter ## 176
+                              boundary=boundary)
+# Execution time/iteration
+resultsPumpAdam2$execution.time
+resultsPumpAdam2$execution.iter
+# Convergence time/iteration
+resultsPumpAdam2$convergence.time
+resultsPumpAdam2$convergence.iter
+
 mean(tail(resultsPumpAdam2$param[, 1], 20), trim=.2) ##  0.8298185
 mean(tail(resultsPumpAdam2$param[, 2], 20), trim=.2) ## 1.278673
 save(resultsPumpAdam2, file="pumpAdamCC.RData")
 
 
 # 5. Newton-Raphson ----------------------------------------
-ptm <- proc.time()
 resultsPumpNR <- computeMLE(pump, paramNodes=paramNodesPump,
-                            method="NR", paramInit=init,
+                            method="NR", paramInit=c(2,2),
                             compiledFuns=compiledFunsPump,
                             numMCMCSamples=numMCMCSamples,
                             tol=1e-20,
                             maxIter=300,
-                            boundary=boundary,trackEffSizeGrad=F,skipConvCheck=T)
-timePumpNR <- proc.time() - ptm
-timePumpNR ## 4.480 
+                            boundary=boundary)
+# Execution time/iteration
+resultsPumpNR$execution.time
+resultsPumpNR$execution.iter
+# Convergence time/iteration
+resultsPumpNR$convergence.time
+resultsPumpNR$convergence.iter
+
 mean(resultsPumpNR$param[201:300,1], trim=.2) ## 8379.158
 mean(resultsPumpNR$param[201:300,2], trim=.2) ## 10000
 save(resultsPumpNR, file="pumpNR.RData")
 
-ptm <- proc.time()
 resultsPumpNR2 <- computeMLE(pump, paramNodes=paramNodesPump,
-                            method="NR", paramInit=init,
-                            compiledFuns=compiledFunsPump,
-                            numMCMCSamples=numMCMCSamples,
-                            tol=1e-20,
-                            maxIter=300,
-                            boundary=boundary,trackEffSizeGrad=F,skipConvCheck=F)
-timePumpNR2 <- proc.time() - ptm
-timePumpNR2 ## 4.377 
-resultsPumpNR2$iter ## 300
+                             method="NR", paramInit=c(2,2),
+                             compiledFuns=compiledFunsPump,
+                             numMCMCSamples=numMCMCSamples,
+                             tol=1e-20,
+                             maxIter=300,
+                             boundary=boundary)
+# Execution time/iteration
+resultsPumpNR2$execution.time
+resultsPumpNR2$execution.iter
+# Convergence time/iteration
+resultsPumpNR2$convergence.time
+resultsPumpNR2$convergence.iter
+
 mean(resultsPumpNR2$param[201:300,1], trim=.2) ## 9911.425
 mean(resultsPumpNR2$param[201:300,2], trim=.2) ## 10000
 save(resultsPumpNR2, file="pumpNRCC.RData")
@@ -241,26 +243,30 @@ resultsPump1D <- computeMLE(pump, paramNodesPump,
                             method="ga1D", paramInit=init,
                             compiledFuns=compiledFunsPump,
                             numMCMCSamples=300, numMCMCSamples1D=300, 
-                            maxIter=300,skipConvCheck=T)
-timePump1D <- proc.time() - ptm
-#Error in ga1DMLE(model = model, paramNodes = paramNodes, paramInit = paramInit,  : 
-#                   unused argument (trackEffSizeGrad = FALSE)
-timePump1D ## 12.128 
+                            maxIter=300)
+# Execution time/iteration
+resultsPump1D$execution.time
+resultsPump1D$execution.iter
+# Convergence time/iteration
+resultsPump1D$convergence.time
+resultsPump1D$convergence.iter
+
 mean(tail(resultsPump1D$param[, 1], 20), trim=.2) ## 0.8376302
 mean(tail(resultsPump1D$param[, 2], 20), trim=.2) ## 1.292479
 save(resultsPump1D, file="pump1D.RData")
 
-ptm <- proc.time()
 resultsPump1D2 <- computeMLE(pump, paramNodesPump,
-                            method="ga1D", paramInit=init,
-                            compiledFuns=compiledFunsPump,
-                            numMCMCSamples=300, numMCMCSamples1D=300, 
-                            maxIter=300,skipConvCheck=F)
-timePump1D2 <- proc.time() - ptm
-#Error in ga1DMLE(model = model, paramNodes = paramNodes, paramInit = paramInit,  : 
-#                   unused argument (trackEffSizeGrad = FALSE)
-timePump1D2 ## 3.188 
-resultsPump1D2$iter ## 75
+                             method="ga1D", paramInit=init,
+                             compiledFuns=compiledFunsPump,
+                             numMCMCSamples=300, numMCMCSamples1D=300, 
+                             maxIter=300)
+# Execution time/iteration
+resultsPump1D2$execution.time
+resultsPump1D2$execution.iter
+# Convergence time/iteration
+resultsPump1D2$convergence.time
+resultsPump1D2$convergence.iter
+
 mean(tail(resultsPump1D2$param[, 1], 20), trim=.2) ## 0.8955095
 mean(tail(resultsPump1D2$param[, 2], 20), trim=.2) ## 1.494974
 save(resultsPump1D2, file="pump1DCC.RData")
@@ -272,8 +278,7 @@ ptm <- proc.time()
 resultsPump1DFirst <- computeMLE(pump, paramNodesPump,
                                  method="ga1D", paramInit=init,
                                  compiledFuns=compiledFunsPump,
-                                 numMCMCSamples=numMCMCSamples, 
-                                 numMCMCSamples1D=300, 
+                                 numMCMCSamples=300, numMCMCSamples1D=300,
                                  maxIter=10)
 resultsPumpAdamSecond <- computeMLE(pump, paramNodesPump,
                                     method="adam", 
@@ -284,8 +289,13 @@ resultsPumpAdamSecond <- computeMLE(pump, paramNodesPump,
                                     boundary=boundary)
 mean(tail(resultsPumpAdamSecond$param[, 1], 20), trim=.2) ## 0.8230988
 mean(tail(resultsPumpAdamSecond$param[, 2], 20), trim=.2) ## 1.260072
-timePumpHybrid <- proc.time() - ptm
-timePumpHybrid
+
+# Execution time
+resultsPump1DFirst$execution.time + resultsPumpAdamSecond$execution.time
+
+# Convergence time
+resultsPump1DFirst$execution.time + resultsPumpAdamSecond$convergence.time
+
 
 # MCEM -----------------------------
 #source("MCEM_with_output.R")

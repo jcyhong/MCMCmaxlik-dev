@@ -29,13 +29,14 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
                         delta = 1e-04, 
                         burninFrac = 0.5,
                         eps = 1e-2, rho=0.9,
-                        skipConvCheck=TRUE,
+                        skipConvCheck=FALSE,
+                        runUntilMaxIter=TRUE,
                         blockSize = 20, 
                         runsThreshold = floor(blockSize / 5),
                         pValThreshold = 0.3) {
-  if (skipConvCheck) {
-    blockSize <- maxIter
-  }
+  
+  ptm <- proc.time()
+
   if (is.null(boundary)) {
     boundary=vector('list',length(paramNodes))
     for(i in 1:length(paramNodes)){
@@ -104,30 +105,36 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
                  min(effSizesGrad[iter, ]), 
                  "\n")) 
     }
+    
+    iter <- iter + 1
+    
     # Convergence test
-    if (iter > 2 * blockSize) {
+    if (!converge & iter > 2 * blockSize) {
       # 1. Check oscillating behaviors.
-      runsResults <- checkRuns(paramMatrix[(iter - blockSize + 1):iter, ],
+      runsResults <- checkRuns(paramMatrix[(iter - blockSize):(iter - 1), ],
                                runsThreshold)
       if (runsResults$pass) {
         # 2. Check whether the average stays constant.
         blockResults <- checkBlocks(
-          paramMatrix[(iter - 2 * blockSize + 1):(iter - blockSize), ],
-          paramMatrix[(iter - blockSize + 1):iter, ],
+          paramMatrix[(iter - 2 * blockSize):(iter - blockSize - 1), ],
+          paramMatrix[(iter - blockSize):(iter - 1), ],
           pValThreshold)
         if (blockResults$pass) {
+          convergence.time <- proc.time() - ptm
+          convergence.iter <- iter - 1
           converge <- T
-          break 
         }
+        if (!runUntilMaxIter) break
       }
     }
-    iter <- iter + 1
   }
   
-  if (iter > 2 * blockSize) {
+  if (!skipConvCheck & iter > 2 * blockSize) {
     cat("*** Convergence diagnostics ***\n")
-    cat(paste0("Number of runs in the last ", 
-               blockSize, " iterations: ", 
+    if (converge) {
+      cat(paste0("Converged at Iteration ", convergence.iter, "\n")) 
+    }
+    cat(paste0("Number(s) of runs (block size = ", blockSize, "): ", 
                paste0(runsResults$numRuns, collapse=", "),
                "\n"))
     if (runsResults$pass) {
@@ -135,6 +142,7 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
                  paste(round(blockResults$pVal, 3), collapse=", "),
                  "\n")) 
     }
+    
     if (!converge) {
       cat("*** Warning: Non-convergence ***\n")
       cat("Use a different starting point or increase the MCMC sample size.\n")
@@ -148,13 +156,17 @@ adadeltaMLE <- function(model, paramNodes, compiledFuns, paramInit,
     MLE <- tail(paramMatrix, 1)[1,]
   }
   
+  results <- list(param = paramMatrix,
+                  MLE = MLE, 
+                  execution.time=proc.time() - ptm,
+                  execution.iter=iter - 1)
   if (trackEffSizeGrad) {
-    results <- list(param = paramMatrix, iter = iter - 1, 
-                    effSizesGrad = effSizesGrad,
-                    MLE = MLE)
-  } else {
-    results <- list(param = paramMatrix, iter = iter - 1,
-                    MLE = MLE)
+    results <- c(results, list(effSizesGrad = effSizesGrad))
+  }
+  if (!skipConvCheck & iter > 2 * blockSize & converge) {
+    results <- c(results, 
+                 list(convergence.time=convergence.time,
+                      convergence.iter=convergence.iter))
   }
   return(results)
 }

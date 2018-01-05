@@ -29,14 +29,14 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
                     burninFrac=0.5, burninFrac1D=0.5,
                     kern="gaussian", bdwth="nrd0",
                     tol=1e-04,
-                    skipConvCheck=TRUE,
+                    trackEffSizeGrad=FALSE,
+                    skipConvCheck=FALSE,
+                    runUntilMaxIter=TRUE,
                     blockSize = 20, runsThreshold = floor(blockSize / 5),
                     pValThreshold = 0.3,
                     returnHess = F) {
   
-  if (skipConvCheck) {
-    blockSize <- maxIter
-  }
+  ptm <- proc.time()
   
   if(is.null(boundary)){
     boundary=vector('list',length(paramNodes))
@@ -120,7 +120,7 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
     iter <- iter + 1
     
     # Convergence test
-    if (iter > 2 * blockSize) {
+    if (!converge & iter > 2 * blockSize) {
       # 1. Check oscillating behaviors.
       runsResults <- checkRuns(paramMatrix[(iter - blockSize):(iter - 1), ],
                                runsThreshold)
@@ -131,17 +131,21 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
           paramMatrix[(iter - blockSize):(iter - 1), ],
           pValThreshold)
         if (blockResults$pass) {
+          convergence.time <- proc.time() - ptm
+          convergence.iter <- iter - 1
           converge <- T
-          break 
         }
+        if (!runUntilMaxIter) break
       }
     }
   }
   
-  if (iter > 2 * blockSize) {
+  if (!skipConvCheck & iter > 2 * blockSize) {
     cat("*** Convergence diagnostics ***\n")
-    cat(paste0("Number of runs in the last ", 
-               blockSize, " iterations: ", 
+    if (converge) {
+      cat(paste0("Converged at Iteration ", convergence.iter, "\n")) 
+    }
+    cat(paste0("Number(s) of runs (block size = ", blockSize, "): ", 
                paste0(runsResults$numRuns, collapse=", "),
                "\n"))
     if (runsResults$pass) {
@@ -163,21 +167,25 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
     MLE <- tail(paramMatrix, 1)[1,]
   }
   
+  results <- list(param = paramMatrix,
+                  MLE = MLE, 
+                  execution.time=proc.time() - ptm,
+                  execution.iter=iter - 1)
+  if (trackEffSizeGrad) {
+    results <- c(results, list(effSizesGrad = effSizesGrad))
+  }
+  if (!skipConvCheck & iter > 2 * blockSize & converge) {
+    results <- c(results, 
+                 list(convergence.time=convergence.time,
+                      convergence.iter=convergence.iter))
+  }
   
   if (returnHess) {
     approxHessian <- compiledFuns$computeHess$run(1e-4, postMode, burninFrac)
-    return(list(param=na.omit(paramMatrix),
-                iter=iter - 1, 
-                effSizes=effSizes,
-                effSizesGrad=effSizesGrad,
-                hess=approxHessian,
-                MLE=MLE))
+    results <- c(results, list(hess=approxHessian))
   }
-  return(list(param=na.omit(paramMatrix),
-              iter=iter - 1, 
-              effSizes=effSizes,
-              effSizesGrad=effSizesGrad,
-              MLE=MLE))
+  
+  return(results)
 }
 
 getKernelMode <- function(samples, adjust=1, kern="gaussian", bdwth="nrd0") {
