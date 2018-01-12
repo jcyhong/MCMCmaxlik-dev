@@ -70,7 +70,6 @@ mean(tail(resultsPumpFixed$param[, 1], 20), trim=.2)
 mean(tail(resultsPumpFixed$param[, 2], 20), trim=.2)
 save(resultsPumpFixed, file="pumpFixed.RData")
 
-ptm <- proc.time()
 resultsPumpFixed2 <- computeMLE(pump, paramNodesPump,
                                 method="fixed", paramInit=init,
                                 compiledFuns=compiledFunsPump,
@@ -90,7 +89,7 @@ mean(tail(resultsPumpFixed2$param[, 2], 20), trim=.2) ## 1.38381
 save(resultsPumpFixed2, file="pumpFixedCC.RData")
 
 # 2. Small fixed step size ----------------------------------------
-ptm <- proc.time()
+
 resultsPumpSmallFixed <- computeMLE(pump, paramNodesPump,
                                     method="fixed", paramInit=init,
                                     compiledFuns=compiledFunsPump,
@@ -109,7 +108,6 @@ mean(tail(resultsPumpSmallFixed$param[, 1], 20), trim=.2) ## 0.8460056
 mean(tail(resultsPumpSmallFixed$param[, 2], 20), trim=.2) ## 1.325574
 save(resultsPumpSmallFixed, file="pumpSmallFixed.RData")
 
-ptm <- proc.time()
 resultsPumpSmallFixed2 <-  computeMLE(pump, paramNodesPump,
                                       method="fixed", paramInit=init,
                                       compiledFuns=compiledFunsPump,
@@ -189,15 +187,15 @@ resultsPumpAdam <- computeMLE(pump, paramNodesPump,
                               maxIter=300,
                               boundary=boundary)
 # Execution time/iteration
-resultsPumpAdam2$execution.time
-resultsPumpAdam2$execution.iter
+resultsPumpAdam$execution.time
+resultsPumpAdam$execution.iter
 # Convergence time/iteration
-resultsPumpAdam2$convergence.time
-resultsPumpAdam2$convergence.iter
+resultsPumpAdam$convergence.time
+resultsPumpAdam$convergence.iter
 
-mean(tail(resultsPumpAdam2$param[, 1], 20), trim=.2) ##  0.8298185
-mean(tail(resultsPumpAdam2$param[, 2], 20), trim=.2) ## 1.278673
-save(resultsPumpAdam2, file="pumpAdamCC.RData")
+mean(tail(resultsPumpAdam$param[, 1], 20), trim=.2) ##  0.8298185
+mean(tail(resultsPumpAdam$param[, 2], 20), trim=.2) ## 1.278673
+save(resultsPumpAdam, file="pumpAdamCC.RData")
 
 
 # 5. Newton-Raphson ----------------------------------------
@@ -215,8 +213,8 @@ resultsPumpNR$execution.iter
 resultsPumpNR$convergence.time
 resultsPumpNR$convergence.iter
 
-mean(resultsPumpNR$param[201:300,1], trim=.2) ## 8379.158
-mean(resultsPumpNR$param[201:300,2], trim=.2) ## 10000
+mean(tail(resultsPumpNR$param[,1],20), trim=.2) 
+mean(tail(resultsPumpNR$param[,2],20), trim=.2) 
 save(resultsPumpNR, file="pumpNR.RData")
 
 resultsPumpNR2 <- computeMLE(pump, paramNodes=paramNodesPump,
@@ -233,12 +231,12 @@ resultsPumpNR2$execution.iter
 resultsPumpNR2$convergence.time
 resultsPumpNR2$convergence.iter
 
-mean(resultsPumpNR2$param[201:300,1], trim=.2) ## 9911.425
-mean(resultsPumpNR2$param[201:300,2], trim=.2) ## 10000
+mean(tail(resultsPumpNR2$param[,1],20), trim=.2) ## 
+mean(tail(resultsPumpNR2$param[,2],20), trim=.2) ## 
 save(resultsPumpNR2, file="pumpNRCC.RData")
 
 # 6. 1-D sampling ----------------------------------------
-ptm <- proc.time()
+
 resultsPump1D <- computeMLE(pump, paramNodesPump,
                             method="ga1D", paramInit=init,
                             compiledFuns=compiledFunsPump,
@@ -251,8 +249,8 @@ resultsPump1D$execution.iter
 resultsPump1D$convergence.time
 resultsPump1D$convergence.iter
 
-mean(tail(resultsPump1D$param[, 1], 20), trim=.2) ## 0.8376302
-mean(tail(resultsPump1D$param[, 2], 20), trim=.2) ## 1.292479
+mean(tail(resultsPump1D$param[, 1], 20), trim=.2) ##
+mean(tail(resultsPump1D$param[, 2], 20), trim=.2) ## 
 save(resultsPump1D, file="pump1D.RData")
 
 resultsPump1D2 <- computeMLE(pump, paramNodesPump,
@@ -267,14 +265,14 @@ resultsPump1D2$execution.iter
 resultsPump1D2$convergence.time
 resultsPump1D2$convergence.iter
 
-mean(tail(resultsPump1D2$param[, 1], 20), trim=.2) ## 0.8955095
-mean(tail(resultsPump1D2$param[, 2], 20), trim=.2) ## 1.494974
+mean(tail(resultsPump1D2$param[, 1], 20), trim=.2) ## 
+mean(tail(resultsPump1D2$param[, 2], 20), trim=.2) ## 
 save(resultsPump1D2, file="pump1DCC.RData")
 
 
 # 7. Hybrid
 # Run 10 iterations of 1D, and then run Adam.
-ptm <- proc.time()
+
 resultsPump1DFirst <- computeMLE(pump, paramNodesPump,
                                  method="ga1D", paramInit=init,
                                  compiledFuns=compiledFunsPump,
@@ -287,8 +285,8 @@ resultsPumpAdamSecond <- computeMLE(pump, paramNodesPump,
                                     numMCMCSamples=numMCMCSamples,
                                     maxIter=300,
                                     boundary=boundary)
-mean(tail(resultsPumpAdamSecond$param[, 1], 20), trim=.2) ## 0.8230988
-mean(tail(resultsPumpAdamSecond$param[, 2], 20), trim=.2) ## 1.260072
+mean(tail(resultsPumpAdamSecond$param[, 1], 20), trim=.2) ## 
+mean(tail(resultsPumpAdamSecond$param[, 2], 20), trim=.2) ## 
 
 # Execution time
 resultsPump1DFirst$execution.time + resultsPumpAdamSecond$execution.time
@@ -298,15 +296,10 @@ resultsPump1DFirst$execution.time + resultsPumpAdamSecond$convergence.time
 
 
 # MCEM -----------------------------
-#source("MCEM_with_output.R")
+
 pump2 <- pump$newModel()
 box <- list(list(c('alpha', 'beta'), c(0, Inf)))
-#pumpMCEM <- buildMCEM(model=pump2, latentNodes='theta[1:10]',
-#                      boxConstraints=box, theta0=c(10, 10))
-## new version that tracks
-#Error: In sizeNimbleFunction: A nimbleFunction method should not be processed here.
-#This occurred for: calc_E_llk(ARG2_theta_,ARG3_oldTheta_,1)
-#This was part of the call:  svals[r] <- calc_E_llk(ARG2_theta_,ARG3_oldTheta_,1)
+
 
 ## regular
 pumpMCEM <- buildMCEM(model=pump2, latentNodes='theta[1:10]',
