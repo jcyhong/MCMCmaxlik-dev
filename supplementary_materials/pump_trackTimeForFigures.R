@@ -6,7 +6,7 @@
 # and 1-D sampling. MCEM (from the R package NIMBLE) is used as a benchmark.
 #
 ##########################################################################
-
+setwd("~/Desktop/2018-01-12_johnny")
 alg=c("fixed","fixed small","adadelta","adam","NR","1D")
 execution.iter=execution.time=convergence.time=convergence.iter=rep(NA,length(alg))
 pumpTimeIterInfo=cbind.data.frame(alg,execution.iter,execution.time,convergence.iter,convergence.time)
@@ -452,15 +452,28 @@ require(gridExtra)
 
 
 g1<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=execution.time))+geom_bar(stat="identity")+
-  xlab("algorithm")+ylab("execution time (s)")+ggtitle("Pump Example")
+  xlab("algorithm")+ylab("execution time (s)")+ggtitle("Pump Example \n Maximum Number of Iterations: 300")
 
 g2<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=convergence.time))+geom_bar(stat="identity")+
-  xlab("algorithm")+ylab("convergence time (s)")+ggtitle("Pump Example")
+  xlab("algorithm")+ylab("convergence time (s)")
+#+ggtitle("Pump Example \n Maximum Number of Iterations: 300")
 
-g3<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=execution.iter))+geom_bar(stat="identity")+
+#g3<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=execution.iter))+geom_bar(stat="identity")+
   xlab("algorithm")+ylab("iterations executed")+ggtitle("Pump Example")
 
-g4<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=convergence.iter))+geom_bar(stat="identity")+
+#g4<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=convergence.iter))+geom_bar(stat="identity")+
   xlab("algorithm")+ylab("iterations until convergence")+ggtitle("Pump Example")
 
-grid.arrange(g1,g2,g3,g4,ncol=2)
+#grid.arrange(g1,g2,g3,g4,ncol=2)
+grid.arrange(g1,g2,ncol=2)
+
+plot(resultsPumpFixed$param,ylim=c(0,15),main="Pump Example",xlab=expression(alpha),ylab=expression(beta))
+points(resultsPumpSmallFixed$param,col="red")
+points(resultsPumpAdadelta$param,col="blue")
+points(resultsPumpAdam$param,col="forestgreen")
+points(resultsPump1D$param,col="goldenrod")
+points(resultsPumpNR$param,col="magenta")
+legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
+       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+
+
