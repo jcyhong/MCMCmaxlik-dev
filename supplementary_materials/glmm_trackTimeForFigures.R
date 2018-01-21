@@ -229,7 +229,7 @@ ggplot(data=subset(glmmTimeIterInfo,!is.na(execution.time)),aes(x=alg,y=executio
 #grid.arrange(g1,g2,ncol=2)
 
 load("GLMMFixed.RData")
-load("GLMMSmallFixed.RData")
+load("GLMMFixedSmall.RData")
 load("GLMMAdadelta.RData")
 load("GLMMAdam.RData")
 #load("GLMM1D.RData")
@@ -292,7 +292,7 @@ legend("bottomright",col=c("black","red","blue","forestgreen"#,"goldenrod","mage
          ),lty=1,lwd=2)
 
 plot(resultsGLMMFixed$param[,6],xlim=c(0,350),ylim=c(0,3),main="GLMM Example",xlab="iter",ylab=expression(sigma[M]^2),type="l")
-lines(resultsGLMMFixedSmall$param[,6],col="red",lwd=2
+lines(resultsGLMMFixedSmall$param[,6],col="red",lwd=2)
 lines(resultsAdadelta$param[,6],col="blue")
 lines(resultsAdam$param[,6],col="forestgreen",lwd=3)
 #lines(results1D$param[,6],col="goldenrod",lwd=2)

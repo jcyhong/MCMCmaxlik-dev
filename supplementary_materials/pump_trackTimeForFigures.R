@@ -446,6 +446,8 @@ pumpTimeIterInfo
 
 write.csv(pumpTimeIterInfo,"pumpTimeIterInfo.csv",row.names=F)
 
+setwd("/Users/Sara/Desktop/2018-01-12_johnny")
+pumpTimeIterInfo<-read.csv("pumpTimeIterInfo.csv")
 
 require(ggplot2)
 require(gridExtra)
@@ -466,6 +468,13 @@ g2<-ggplot(data=subset(pumpTimeIterInfo,!is.na(convergence.time)),aes(x=alg,y=co
 
 #grid.arrange(g1,g2,g3,g4,ncol=2)
 grid.arrange(g1,g2,ncol=2)
+
+load("pumpFixed.RData")
+load("pumpSmallFixed.RData")
+load("pumpAdadelta.RData")
+load("pumpAdam.RData")
+load("pumpNR.RData")
+load("pump1D.RData")
 
 plot(resultsPumpFixed$param,ylim=c(0,15),main="Pump Example",xlab=expression(alpha),ylab=expression(beta))
 points(resultsPumpSmallFixed$param,col="red")
