@@ -241,57 +241,75 @@ stateSpaceTimeIterInfo$convergence.time[6]=ifelse(is.null(resultsSSMod1D$converg
 
 write.csv(stateSpaceTimeIterInfo,"stateSpaceTimeIterInfo.csv",row.names=F)
 
+setwd("/Users/Sara/Desktop/2018-01-12_johnny")
+stateSpaceTimeIterInfo<-read.csv("stateSpaceTimeIterInfo.csv")
 
 require(ggplot2)
 require(gridExtra)
 
 stateSpaceTimeIterInfo$convergence.time=rep(0,6)
 
-g1<-ggplot(data=stateSpaceTimeIterInfo,aes(x=alg,y=execution.time))+geom_bar(stat="identity")+
+#g1<-
+ggplot(data=subset(stateSpaceTimeIterInfo,!is.na(execution.time)),aes(x=alg,y=execution.time))+geom_bar(stat="identity")+
   xlab("algorithm")+ylab("execution time (s)")+ggtitle("State Space Model Example \n Maximum Number of Iterations: 300")
 
-g2<-ggplot(data=stateSpaceTimeIterInfo,aes(x=alg,y=convergence.time))+geom_bar(stat="identity")+
-  xlab("algorithm")+ylab("convergence time (s)")
+#g2<-ggplot(data=stateSpaceTimeIterInfo,aes(x=alg,y=convergence.time))+geom_bar(stat="identity")+
+#  xlab("algorithm")+ylab("convergence time (s)")
 #+ggtitle("Pump Example \n Maximum Number of Iterations: 300")
 
 
 #grid.arrange(g1,g2,g3,g4,ncol=2)
-grid.arrange(g1,g2,ncol=2)
+#grid.arrange(g1,g2,ncol=2)
 
-par(mfrow=c(4,1))
-plot(resultsGLMMFixed$param[,1],xlim=c(0,350),ylim=c(0,2),main="State Space Model Example",xlab="iter",ylab=expression(rho),type="l")
-lines(resultsGLMMSmallFixed$param[,1],col="red",lwd=2)
-lines(resultsAdadelta$param[,1],col="blue")
-lines(resultsAdam$param[,1],col="forestgreen",lwd=3)
-lines(results1D$param[,1],col="goldenrod",lwd=2)
-lines(resultsNR$param[,1],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+load("SSModFixed.RData")
+load("SSModSmallFixed.RData")
+load("SSModAdadelta.RData")
+load("SSModAdam.RData")
+load("SSMod1D.RData")
 
-plot(resultsGLMMFixed$param[,2],xlim=c(0,350),ylim=c(-0.5,2),main="State Space Model Example",xlab="iter",ylab=expression(sigma[PN]),type="l")
-lines(resultsGLMMSmallFixed$param[,2],col="red",lwd=2)
-lines(resultsAdadelta$param[,2],col="blue")
-lines(resultsAdam$param[,2],col="forestgreen",lwd=3)
-lines(results1D$param[,2],col="goldenrod",lwd=2)
-lines(resultsNR$param[,2],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+par(mfrow=c(2,1))
+plot(resultsSSModFixed$param[,1],xlim=c(0,400),ylim=c(0,2),main="State Space Model Example",xlab="iter",ylab=expression(rho),type="l")
+lines(resultsSSModSmallFixed$param[,1],col="red",lwd=2)
+lines(resultsSSModAdadelta$param[,1],col="blue")
+lines(resultsSSModAdam$param[,1],col="forestgreen",lwd=3)
+lines(resultsSSMod1D$param[,1],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,1],col="magenta",lwd=2)
+legend("topright",col=c("black","red","blue","forestgreen","goldenrod"#,"magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam","1D"#,"NR"
+         ),lty=1,lwd=2)
 
-plot(resultsGLMMFixed$param[,3],xlim=c(0,350),ylim=c(-3,2),main="State Space Model Example",xlab="iter",ylab=expression(sigma[OE]),type="l")
-lines(resultsGLMMSmallFixed$param[,3],col="red",lwd=2)
-lines(resultsAdadelta$param[,3],col="blue")
-lines(resultsAdam$param[,3],col="forestgreen",lwd=3)
-lines(results1D$param[,3],col="goldenrod",lwd=2)
-lines(resultsNR$param[,3],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+plot(resultsSSModFixed$param[,2],xlim=c(0,400),ylim=c(0,15),main="State Space Model Example",xlab="iter",ylab=expression(sigma[PN]),type="l")
+lines(resultsSSModSmallFixed$param[,2],col="red",lwd=2)
+lines(resultsSSModAdadelta$param[,2],col="blue")
+lines(resultsSSModAdam$param[,2],col="forestgreen",lwd=3)
+lines(resultsSSMod1D$param[,2],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,2],col="magenta",lwd=2)
+legend("topright",col=c("black","red","blue","forestgreen","goldenrod"#,"magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam","1D"#,"NR"
+         ),lty=1,lwd=2)
+
+plot(resultsSSModFixed$param[,3],xlim=c(0,400),ylim=c(4,10),main="State Space Model Example",xlab="iter",ylab=expression(sigma[OE]),type="l")
+lines(resultsSSModSmallFixed$param[,3],col="red",lwd=2)
+lines(resultsSSModAdadelta$param[,3],col="blue")
+lines(resultsSSModAdam$param[,3],col="forestgreen",lwd=3)
+lines(resultsSSMod1D$param[,3],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,3],col="magenta",lwd=2)
+legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod"#,"magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam","1D"#,"NR"
+         ),lty=1,lwd=2)
 
 
-plot(resultsGLMMFixed$param[,4],xlim=c(0,350),ylim=c(0,2),main="State Space Model Example",xlab="iter",ylab=expression(x[0]),type="l")
-lines(resultsGLMMSmallFixed$param[,4],col="red",lwd=2)
-lines(resultsAdadelta$param[,4],col="blue")
-lines(resultsAdam$param[,4],col="forestgreen",lwd=3)
-lines(results1D$param[,4],col="goldenrod",lwd=2)
-lines(resultsNR$param[,4],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+plot(resultsSSModFixed$param[,4],xlim=c(0,400),ylim=c(-5,15),main="State Space Model Example",xlab="iter",ylab=expression(x[0]),type="l")
+lines(resultsSSModSmallFixed$param[,4],col="red",lwd=2)
+lines(resultsSSModAdadelta$param[,4],col="blue")
+lines(resultsSSModAdam$param[,4],col="forestgreen",lwd=3)
+
+lines(resultsSSMod1D$param[,4],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,4],col="magenta",lwd=2)
+legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod"#,"magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam","1D"#,"NR"
+         ),lty=1,lwd=2)

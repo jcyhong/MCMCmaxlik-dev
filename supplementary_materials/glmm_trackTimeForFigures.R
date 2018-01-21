@@ -209,75 +209,97 @@ write.csv(glmmTimeIterInfo,"glmmTimeIterInfo.csv",row.names=F)
 
 glmmTimeIterInfo$convergence.time=rep(0,nrow(glmmTimeIterInfo))
 
+setwd("/Users/Sara/Desktop/2018-01-12_johnny")
+glmmTimeIterInfo<-read.csv("glmmTimeIterInfo.csv")
+
 require(ggplot2)
 require(gridExtra)
 
 
-g1<-ggplot(data=glmmTimeIterInfo,aes(x=alg,y=execution.time))+geom_bar(stat="identity")+
+#g1<-
+ggplot(data=subset(glmmTimeIterInfo,!is.na(execution.time)),aes(x=alg,y=execution.time))+geom_bar(stat="identity")+
   xlab("algorithm")+ylab("execution time (s)")+ggtitle("GLMM Example \n Maximum Number of Iterations: 300")
 
-g2<-ggplot(data=glmmTimeIterInfo,aes(x=alg,y=convergence.time))+geom_bar(stat="identity")+
-  xlab("algorithm")+ylab("convergence time (s)")+ylim(0,1)
+#g2<-ggplot(data=glmmTimeIterInfo,aes(x=alg,y=convergence.time))+geom_bar(stat="identity")+
+#  xlab("algorithm")+ylab("convergence time (s)")+ylim(0,1)
 #+ggtitle("Pump Example \n Maximum Number of Iterations: 300")
 
 
 #grid.arrange(g1,g2,g3,g4,ncol=2)
-grid.arrange(g1,g2,ncol=2)
+#grid.arrange(g1,g2,ncol=2)
+
+load("GLMMFixed.RData")
+load("GLMMSmallFixed.RData")
+load("GLMMAdadelta.RData")
+load("GLMMAdam.RData")
+#load("GLMM1D.RData")
 
 par(mfrow=c(3,1))
 plot(resultsGLMMFixed$param[,1],xlim=c(0,350),ylim=c(0,2),main="GLMM Example",xlab="iter",ylab=expression(beta[1]),type="l")
 lines(resultsGLMMFixedSmall$param[,1],col="red",lwd=2)
 lines(resultsAdadelta$param[,1],col="blue")
 lines(resultsAdam$param[,1],col="forestgreen",lwd=3)
-lines(results1D$param[,1],col="goldenrod",lwd=2)
-lines(resultsNR$param[,1],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+#lines(results1D$param[,1],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,1],col="magenta",lwd=2)
+legend("bottomright",col=c("black","red","blue","forestgreen"#,"goldenrod","magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam"#,"1D","NR"
+         ),lty=1,lwd=2)
 
 plot(resultsGLMMFixed$param[,2],xlim=c(0,350),ylim=c(-0.5,2),main="GLMM Example",xlab="iter",ylab=expression(beta[2]),type="l")
 lines(resultsGLMMFixedSmall$param[,2],col="red",lwd=2)
 lines(resultsAdadelta$param[,2],col="blue")
 lines(resultsAdam$param[,2],col="forestgreen",lwd=3)
-lines(results1D$param[,2],col="goldenrod",lwd=2)
-lines(resultsNR$param[,2],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+#lines(results1D$param[,2],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,2],col="magenta",lwd=2)
+legend("bottomright",col=c("black","red","blue","forestgreen"#,"goldenrod","magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam"#,"1D","NR"
+         ),lty=1,lwd=2)
 
 plot(resultsGLMMFixed$param[,3],xlim=c(0,350),ylim=c(-2.5,2),main="GLMM Example",xlab="iter",ylab=expression(beta[3]),type="l")
 lines(resultsGLMMFixedSmall$param[,3],col="red",lwd=2)
 lines(resultsAdadelta$param[,3],col="blue")
 lines(resultsAdam$param[,3],col="forestgreen",lwd=3)
-lines(results1D$param[,3],col="goldenrod",lwd=2)
-lines(resultsNR$param[,3],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+#lines(results1D$param[,3],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,3],col="magenta",lwd=2)
+legend("bottomright",col=c("black","red","blue","forestgreen"#,"goldenrod","magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam"#,"1D","NR"
+         ),lty=1,lwd=2)
 
 
 plot(resultsGLMMFixed$param[,4],xlim=c(0,350),ylim=c(0,2),main="GLMM Example",xlab="iter",ylab=expression(beta[4]),type="l")
 lines(resultsGLMMFixedSmall$param[,4],col="red",lwd=2)
 lines(resultsAdadelta$param[,4],col="blue")
 lines(resultsAdam$param[,4],col="forestgreen",lwd=3)
-lines(results1D$param[,4],col="goldenrod",lwd=2)
-lines(resultsNR$param[,4],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+#lines(results1D$param[,4],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,4],col="magenta",lwd=2)
+legend("bottomright",col=c("black","red","blue","forestgreen"#,"goldenrod","magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam"#,"1D","NR"
+         ),lty=1,lwd=2)
 
-plot(resultsGLMMFixed$param[,5],xlim=c(0,350),ylim=c(0,3),main="GLMM Example",xlab="iter",ylab=expression(sigma^2[F]),type="l")
+plot(resultsGLMMFixed$param[,5],xlim=c(0,350),ylim=c(0,3),main="GLMM Example",xlab="iter",ylab=expression(sigma[F]^2),type="l")
 lines(resultsGLMMFixedSmall$param[,5],col="red",lwd=2)
 lines(resultsAdadelta$param[,5],col="blue")
 lines(resultsAdam$param[,5],col="forestgreen",lwd=3)
-lines(results1D$param[,5],col="goldenrod",lwd=2)
-lines(resultsNR$param[,5],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+#lines(results1D$param[,5],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,5],col="magenta",lwd=2)
+legend("bottomright",col=c("black","red","blue","forestgreen"#,"goldenrod","magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam"#,"1D","NR"
+         ),lty=1,lwd=2)
 
-plot(resultsGLMMFixed$param[,6],xlim=c(0,350),ylim=c(0,3),main="GLMM Example",xlab="iter",ylab=expression(sigma^2[M]),type="l")
-lines(resultsGLMMFixedSmall$param[,6],col="red",lwd=2)
+plot(resultsGLMMFixed$param[,6],xlim=c(0,350),ylim=c(0,3),main="GLMM Example",xlab="iter",ylab=expression(sigma[M]^2),type="l")
+lines(resultsGLMMFixedSmall$param[,6],col="red",lwd=2
 lines(resultsAdadelta$param[,6],col="blue")
 lines(resultsAdam$param[,6],col="forestgreen",lwd=3)
-lines(results1D$param[,6],col="goldenrod",lwd=2)
-lines(resultsNR$param[,6],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+#lines(results1D$param[,6],col="goldenrod",lwd=2)
+#lines(resultsNR$param[,6],col="magenta",lwd=2)
+legend("bottomright",col=c("black","red","blue","forestgreen"#,"goldenrod","magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam"#,"1D","NR"
+         ),lty=1,lwd=2)
 
 

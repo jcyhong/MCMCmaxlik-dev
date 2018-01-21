@@ -192,6 +192,8 @@ logRegTimeIterInfo$convergence.time[6]=ifelse(is.null(resultsLogreg1D$convergenc
 
 write.csv(logRegTimeIterInfo,"logRegTimeIterInfo.csv",row.names=F)
 
+setwd("/Users/Sara/Desktop/2018-01-12_johnny")
+logRegTimeIterInfo<-read.csv("logRegTimeIterInfo.csv")
 
 require(ggplot2)
 require(gridExtra)
@@ -200,13 +202,19 @@ require(gridExtra)
 g1<-ggplot(data=logRegTimeIterInfo,aes(x=alg,y=execution.time))+geom_bar(stat="identity")+
   xlab("algorithm")+ylab("execution time (s)")+ggtitle("Logistic Regression Example \n Maximum Number of Iterations: 300")
 
-g2<-ggplot(data=logRegTimeIterInfo,aes(x=alg,y=convergence.time))+geom_bar(stat="identity")+
+g2<-ggplot(data=subset(logRegTimeIterInfo,!is.na(convergence.time)),aes(x=alg,y=convergence.time))+geom_bar(stat="identity")+
   xlab("algorithm")+ylab("convergence time (s)")
 #+ggtitle("Pump Example \n Maximum Number of Iterations: 300")
 
 
 #grid.arrange(g1,g2,g3,g4,ncol=2)
 grid.arrange(g1,g2,ncol=2)
+
+load("logRegFixed.RData")
+load("logRegSmallFixed.RData")
+load("logRegAdadelta.RData")
+load("logRegAdam.RData")
+load("logReg1D.RData")
 
 
 par(mfrow=c(3,1))
@@ -215,27 +223,45 @@ lines(resultsLogregSmallFixed$param[,1],col="red",lwd=2)
 lines(resultsLogregAdadelta$param[,1],col="blue")
 lines(resultsLogregAdam$param[,1],col="forestgreen",lwd=3)
 lines(resultsLogreg1D$param[,1],col="goldenrod",lwd=2)
-lines(resultsLogregNR$param[,1],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+#lines(resultsLogregNR$param[,1],col="magenta",lwd=2)
+abline(v=logRegTimeIterInfo$convergence.iter[1],col="black")
+abline(v=logRegTimeIterInfo$convergence.iter[3],col="blue")
+abline(v=logRegTimeIterInfo$convergence.iter[4],col="forestgreen")
+abline(v=logRegTimeIterInfo$convergence.iter[6],col="goldenrod")
+legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod"#,"magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam","1D"#,"NR"
+         ),lty=1,lwd=2)
 
 plot(resultsLogregFixed$param[,2],xlim=c(0,350),main="Logistic Regression Example",xlab="iter",ylab=expression(beta[1]),type="l")
 lines(resultsLogregSmallFixed$param[,2],col="red",lwd=2)
 lines(resultsLogregAdadelta$param[,2],col="blue")
 lines(resultsLogregAdam$param[,2],col="forestgreen",lwd=3)
 lines(resultsLogreg1D$param[,2],col="goldenrod",lwd=2)
-lines(resultsLogregNR$param[,2],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+#lines(resultsLogregNR$param[,2],col="magenta",lwd=2)
+abline(v=logRegTimeIterInfo$convergence.iter[1],col="black")
+abline(v=logRegTimeIterInfo$convergence.iter[3],col="blue")
+abline(v=logRegTimeIterInfo$convergence.iter[4],col="forestgreen")
+abline(v=logRegTimeIterInfo$convergence.iter[6],col="goldenrod")
+legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod"#,"magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam","1D"#,"NR"
+         ),lty=1,lwd=2)
 
 plot(resultsLogregFixed$param[,3],xlim=c(0,350),main="Logistic Regression Example",xlab="iter",ylab=expression(sigma[RE]),type="l")
 lines(resultsLogregSmallFixed$param[,3],col="red",lwd=2)
 lines(resultsLogregAdadelta$param[,3],col="blue")
 lines(resultsLogregAdam$param[,3],col="forestgreen",lwd=3)
 lines(resultsLogreg1D$param[,3],col="goldenrod",lwd=2)
-lines(resultsLogregNR$param[,3],col="magenta",lwd=2)
-legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+#lines(resultsLogregNR$param[,3],col="magenta",lwd=2)
+abline(v=logRegTimeIterInfo$convergence.iter[1],col="black")
+abline(v=logRegTimeIterInfo$convergence.iter[3],col="blue")
+abline(v=logRegTimeIterInfo$convergence.iter[4],col="forestgreen")
+abline(v=logRegTimeIterInfo$convergence.iter[6],col="goldenrod")
+legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod"#,"magenta"
+                           ),
+       c("fixed","fixed small","adadelta","adam","1D"#,"NR"
+         ),lty=1,lwd=2)
 
 
 

@@ -224,7 +224,7 @@ save(resultsPumpAdam, file="pumpAdam.RData")
 
 # 5. Newton-Raphson ----------------------------------------
 resultsPumpNR <- computeMLE(pump, paramNodes=paramNodesPump,
-                            method="NR", paramInit=c(2,2),
+                            method="NR", paramInit=init,
                             compiledFuns=compiledFunsPump,
                             numMCMCSamples=numMCMCSamples,
                             tol=1e-20,
@@ -454,15 +454,15 @@ require(gridExtra)
 g1<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=execution.time))+geom_bar(stat="identity")+
   xlab("algorithm")+ylab("execution time (s)")+ggtitle("Pump Example \n Maximum Number of Iterations: 300")
 
-g2<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=convergence.time))+geom_bar(stat="identity")+
+g2<-ggplot(data=subset(pumpTimeIterInfo,!is.na(convergence.time)),aes(x=alg,y=convergence.time))+geom_bar(stat="identity")+
   xlab("algorithm")+ylab("convergence time (s)")
 #+ggtitle("Pump Example \n Maximum Number of Iterations: 300")
 
 #g3<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=execution.iter))+geom_bar(stat="identity")+
-  xlab("algorithm")+ylab("iterations executed")+ggtitle("Pump Example")
+#  xlab("algorithm")+ylab("iterations executed")+ggtitle("Pump Example")
 
 #g4<-ggplot(data=pumpTimeIterInfo,aes(x=alg,y=convergence.iter))+geom_bar(stat="identity")+
-  xlab("algorithm")+ylab("iterations until convergence")+ggtitle("Pump Example")
+#  xlab("algorithm")+ylab("iterations until convergence")+ggtitle("Pump Example")
 
 #grid.arrange(g1,g2,g3,g4,ncol=2)
 grid.arrange(g1,g2,ncol=2)
@@ -472,8 +472,9 @@ points(resultsPumpSmallFixed$param,col="red")
 points(resultsPumpAdadelta$param,col="blue")
 points(resultsPumpAdam$param,col="forestgreen")
 points(resultsPump1D$param,col="goldenrod")
-points(resultsPumpNR$param,col="magenta")
+#points(resultsPumpNR$param,col="magenta")
 legend("bottomright",col=c("black","red","blue","forestgreen","goldenrod","magenta"),
-       c("fixed","fixed small","adadelta","adam","1D","NR"),lty=1,lwd=2)
+       c("fixed","fixed small","adadelta","adam","1D"#,"NR"
+         ),lty=1,lwd=2)
 
 
