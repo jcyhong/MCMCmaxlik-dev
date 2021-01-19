@@ -105,68 +105,70 @@ buildMCMCmaxlik <- function(model, paramNodes){
     }
   )
   
-  setParams <- nfSetParams(model, paramNodes)
-  latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
-  setLatent <- nfSetLatent(model, latentNodes)
-  mcmcConf <- configureMCMC(model, nodes = latentNodes, monitors = latentNodes)
-  MCMC <- buildMCMC(mcmcConf)
-  LLR <- nfLLR(model, paramNodes, latentNodes, MCMC$mvSamples)
+  ## nfADgrad <- nimbleFunction(
+  ##   setup = function(model, paramNodes, stateNodes, mvSamples) {
+  ##     # paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+  ##     calcNodes <- c(model$getDependencies(stateNodes), 
+  ##                    model$getDependencies(paramNodes, determOnly = TRUE))
+  ##     D <- length(model$expandNodeNames(paramNodes))
+  ##     grad <- numeric(D)
+  ##   },
+  ##   run = function(includePrior = logical(0), burninFrac = double(0)) {
+  ##     m <- getsize(mvSamples)
+  ##     ans <- numeric(D)
+  ##     lower <- ceiling(burninFrac * m) + 1
+  ##     for (i in lower:m) {
+  ##       copy(from=mvSamples, to=model, row=i, logProb=FALSE)
+  ##       temp <- nimDerivs(model$calculate(calcNodes), wrt=paramNodes, order = c(1,2))
+  ##       ans <- ans + temp$jacobian[1, ]
+  ##     }
+  ##     grad <<- ans / (m - lower + 1)
+  ##   }
+  ## )
   
-  nfApproxGrad <- nimbleFunction(
-    setup = function(model, paramNodes, stateNodes, mvSamples, nfLLR) {
-      paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
-      calcNodes <- model$getDependencies(stateNodes)
+  nfADGradHess <- nimbleFunction(
+    setup = function(model, paramNodes, stateNodes, mvSamples) {
+      # paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+      calcNodes <- c(model$getDependencies(stateNodes), 
+                     model$getDependencies(paramNodes, determOnly = TRUE))
+      calcNodes <- model$topologicallySortNodes(calcNodes)
       D <- length(model$expandNodeNames(paramNodes))
-      grad <- numeric(2)
-      myLLR <- nfLLR(model, paramNodes, stateNodes, mvSamples)
+      grad <- numeric(D)
+      hess <- nimMatrix(0, nrow = D, ncol = D)
     },
-    run = function(delta = double(0), includePrior = logical(0),
-                   burninFrac = double(0)) {
-      P <- values(model, paramNodes)
+    run = function(includePrior = logical(0), burninFrac = double(0), gradient = logical(0), hessian = logical(0)) {
       m <- getsize(mvSamples)
-      lr <- numeric(D)
-      for (j in 1:D) {
-        inc <- numeric(D, value = 0)
-        inc[j] <- delta
-        lr[j] <- myLLR$run(P, inc, includePrior, burninFrac)
+      order <- numeric(length = gradient + hessian)
+      if(gradient) {
+        ansGrad <- numeric(D)
+        order[1] <- 1
       }
-      grad <<- (lr - 1) / delta
-    }
-  )
-  
-  nfApproxHess <- nimbleFunction(
-    setup = function(model, paramNodes, stateNodes, mvSamples, nfLLR) {
-      paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
-      calcNodes <- model$getDependencies(stateNodes)
-      D <- length(model$expandNodeNames(paramNodes))
-      myLLR2 <- nfLLR(model, paramNodes, stateNodes, mvSamples)
-    },
-    run = function(delta = double(0), includePrior = logical(0), burninFrac = double(0)) {
-      P <- values(model, paramNodes)
-      m <- getsize(mvSamples)
-      lr1 <- numeric(D)
-      for (j in 1:D) {
-        inc <- numeric(D, value = 0)
-        inc[j] <- delta
-        lr1[j] <- myLLR2$run(P, inc, includePrior, burninFrac)
+      if(hessian) {
+        ansHess <- nimMatrix(0, nrow = D, ncol = D)
+        if(gradient)
+          order[2] <- 2
+        else
+          order[1] <- 2
       }
-      grad <- (lr1 - 1) / delta
-      
-      hess <- matrix(0, nrow = D, ncol = D)
-      for (i in 1:D) {
-        for (j in i:D) {
-          inc <- numeric(D, value = 0)
-          inc[i] <- delta
-          inc[j] <- inc[j] + delta 
-          lr <- myLLR2$run(P, inc, includePrior, burninFrac)
-          gradij <- (lr - 1) / delta
-          hess[i, j] <- - grad[i] * grad[j] +
-            1 / delta * (gradij - grad[i] - grad[j])
-          if (i != j) hess[j, i] <- hess[i, j]
+      lower <- ceiling(burninFrac * m) + 1
+      for (i in lower:m) {
+        copy(from=mvSamples, to=model, row=i, logProb=FALSE)
+        temp <- nimDerivs(model$calculate(calcNodes), wrt=paramNodes, 
+                          order = order)
+        if(gradient)
+          ansGrad <- ansGrad + temp$jacobian[1, ]
+        if(hessian) {
+          for(j in 1:D) {
+            for(k in 1:D) {
+              ansHess[j,k] <- ansHess[j,k] + temp$hessian[j, k, 1]
+            }
+          }
         }
       }
-      returnType(double(2))
-      return(hess)
+      if(hessian)
+        hess <<- ansHess / (m - lower + 1)
+      if(gradient)
+        grad <<- ansGrad / (m - lower + 1)
     }
   )
   
@@ -179,64 +181,68 @@ buildMCMCmaxlik <- function(model, paramNodes){
     }
   )
   
-  computeGrad <- nfApproxGrad(model, paramNodes, latentNodes, MCMC$mvSamples, nfLLR)
-  computeHess <- nfApproxHess(model, paramNodes, latentNodes, MCMC$mvSamples, nfLLR)
+  setParamsInternal <- nfSetParams(model, paramNodes)
+  # setParam and setLatent will become wrappers to the compiled nimbleFunctions.
+  # This will allow them to be used without modification of any calling code.
+  # To do so, we make a list with an elemet named "run".
+  setParams <- list(run = function(p, checkNames = FALSE) {
+    # If a matrix was provided, use the last row, in a way that preserved column names
+    if(is.matrix(p)) p <- p[ dim(p)[1], ]
+    # If there are no names, use directly, assuming p is ordered to match paramNodes
+    if(is.null(names(p))) return(compiledFuns$setParamsInternal$run(p))
+    # If there are names, use them to order p correctly to match paramNodes.
+    # There is by default error checking on correctness or completeness of names of p.  They must match!
+    if(checkNames) {
+      pTrial <- p[paramNodes]
+      if(any(is.na(names(pTrial)))) {
+        iBad <- which(is.na(names(pTrial)))
+        warning(paste("Problem with names in setParams. Names of paramNodes that were expected but not found include", paste(paramNodes[iBad], sep=", ", collapse = ", ")))        
+      }
+      return(compiledFuns$setParamsInternal$run(pTrial))
+    }
+    compiledFuns$setParamsInternal$run(p[paramNodes])
+  })
+  latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE)
+  setLatentInternal <- nfSetLatent(model, latentNodes)
+  setLatent <- list(run = function(p, checkNames = FALSE) {
+    # If a matrix was provided, use the last row, in a way that preserved column names
+    if(is.matrix(p)) p <- p[ dim(p)[1], ]
+    # If there are no names, use directly, assuming p is ordered to match paramNodes
+    if(is.null(names(p))) return(compiledFuns$setLatentInternal$run(p))
+    # If there are names, use them to order p correctly to match paramNodes.
+    # There is by default error checking on correctness or completeness of names of p.  They must match!
+    if(checkNames) {
+      pTrial <- p[latentNodes]
+      if(any(is.na(names(pTrial)))) {
+        iBad <- which(is.na(names(pTrial)))
+        warning(paste("Problem with names in setLatent. Names of latentNodes that were expected but not found include", paste(paramNodes[iBad], sep=", ", collapse = ", ")))
+      }
+      return(compiledFuns$setLatentInternal$run(pTrial))
+    }
+    compiledFuns$setLatentInternal$run(p[latentNodes])
+  })
+  mcmcConf <- configureMCMC(model, nodes = latentNodes, monitors = latentNodes)
+  MCMC <- buildMCMC(mcmcConf)
+  
+  #  computeGrad <- nfADgrad(model, paramNodes, latentNodes, MCMC$mvSamples)
+  computeGradHess <- nfADGradHess(model, paramNodes, latentNodes, MCMC$mvSamples)
   decideIncludePrior <- nfIncludePrior()
   mcmc1DConf <- configureMCMC(model)
   mcmc1DConf$removeSamplers(paramNodes) 
   mcmc1DConf$addSampler(target=paramNodes, type=sampler_RW_rotated,
-                        control=list(computeGrad=computeGrad,
+                        control=list(computeGrad=computeGradHess,
                                      decideIncludePrior=decideIncludePrior))
   MCMC1D <- buildMCMC(mcmc1DConf)
-  compiledFuns <- compileNimble(setParams, LLR, setLatent,
-                                computeGrad, 
-                                computeHess,
-                                decideIncludePrior,
-                                MCMC, 
-                                MCMC1D,
-                                project = model, resetFunctions = TRUE) 
-  return(compiledFuns)
-}
-
-nfLLR <- function(model, paramNodes, stateNodes, mvSamples) {
-  nf <- nimbleFunction(
-    setup = function(model, paramNodes, stateNodes, mvSamples){
-      ## What to calculate when we replace parameters
-      paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
-      ## What to calculate for each row of the MC sample
-      calcNodes <- model$getDependencies(stateNodes)
-    },
-    run = function(P = double(1), delta = double(1), includePrior = logical(0),
-                   burninFrac = double(0)) {
-      ans <- 0
-      m <- getsize(mvSamples)
-      lower <- ceiling(burninFrac) + 1
-      for(i in lower:m) {
-        ## put MCMC output into model
-        copy(from = mvSamples, to = model, row = i, logProb = FALSE)
-        ## Put P + delta parameters in the model and get numerator
-        values(model, paramNodes) <<- P + delta
-        model$calculate(paramDeps)
-        logNumerator <- model$calculate(calcNodes)
-        ## Put P in the model and get denominator
-        values(model, paramNodes) <<- P
-        model$calculate(paramDeps)
-        logDenominator <- model$calculate(calcNodes)
-        ## tally result
-        ans <- ans + exp(logNumerator - logDenominator)
-      }
-      ans <- ans / (m - lower + 1)
-      if (includePrior) {
-        values(model, paramNodes) <<- P + delta
-        model$calculate(paramNodes)
-        priorRatioNum <- exp(model$getLogProb(paramNodes))
-        values(model, paramNodes) <<- P
-        model$calculate(paramNodes)
-        priorRatioDenom <- exp(model$getLogProb(paramNodes))
-        ans <- ans * priorRatioNum / priorRatioDenom
-      }
-      return(ans)
-      returnType(double())
-    })
-  return(nf(model, paramNodes, stateNodes, mvSamples))
+  compiledFuns <- compileNimble(setParamsInternal, setLatentInternal, #computeGrad, 
+                                computeGradHess,
+                                decideIncludePrior, MCMC, MCMC1D,
+                                project = model, resetFunctions = TRUE)
+  result <- list(setParams = setParams,
+                 setLatent = setLatent,
+                 computeGradHess = compiledFuns$computeGradHess,
+                 decideIncludePrior = compiledFuns$decideIncludePrior,
+                 MCMC = compiledFuns$MCMC,
+                 MCMC1D = compiledFuns$MCMC1D)
+  #  return(compiledFuns)
+  return(result)
 }

@@ -12,7 +12,6 @@
 #' @param maxIter maximum number of iterations
 #' @param numMCMCSamples MCMC sample size for gradient approximation
 #' @param numMCMCSamples1D MCMC sample size for 1D sampling
-#' @param delta finite element differences
 #' @param burninFrac the fraction of burn-in samples for gradient approximation
 #' @param burninFrac1D the fraction of burn-in samples for 1D sampling
 #' @param tol the tolerance
@@ -24,8 +23,7 @@
 ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
                     boundary=NULL,
                     postMode=F, maxIter=100,
-                    numMCMCSamples=300, numMCMCSamples1D=300, 
-                    delta=1e-04,
+                    numMCMCSamples=300, numMCMCSamples1D=300,
                     burninFrac=0.5, burninFrac1D=0.5,
                     kern="gaussian", bdwth="nrd0",
                     tol=1e-04,
@@ -68,14 +66,11 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
     
     effSizesGrad[iter,] <- round(effectiveSize(samplesGrad), 1)
     
-    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
-    
-    warmUp <- unname(as.matrix(compiledFuns$MCMC$mvSamples)[numMCMCSamples,])
-    compiledFuns$setLatent$run(warmUp)
+    compiledFuns$computeGradHess$run(postMode, burninFrac, gradient = TRUE, hessian = FALSE)
     
     compiledFuns$MCMC1D$run(numMCMCSamples1D)
     samples1D <- as.matrix(compiledFuns$MCMC1D$mvSamples)
-    gradCurr <- compiledFuns$computeGrad$grad
+    gradCurr <- compiledFuns$computeGradHess$grad
     samplesb <- (samples1D[, 1] - paramMatrix[iter, 1]) / gradCurr[1]
     ### burn in
     burn.in <- ceiling(burninFrac1D * numMCMCSamples1D)
@@ -134,8 +129,8 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
           convergence.time <- proc.time() - ptm
           convergence.iter <- iter - 1
           converge <- T
+          if (!runUntilMaxIter) break
         }
-        if (!runUntilMaxIter) break
       }
     }
   }
@@ -162,7 +157,11 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
   
   paramMatrix <- na.omit(paramMatrix)
   if (iter > 20) {
-    MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
+    if (converge) {
+      MLE <- apply(paramMatrix[(convergence.iter - 19):(convergence.iter), ], 2, mean, trim=.2)
+    } else {
+      MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
+    }
   } else {
     MLE <- tail(paramMatrix, 1)[1,]
   }
@@ -181,8 +180,8 @@ ga1DMLE <- function(model, paramNodes, compiledFuns, paramInit,
   }
   
   if (returnHess) {
-    approxHessian <- compiledFuns$computeHess$run(1e-4, postMode, burninFrac)
-    results <- c(results, list(hess=approxHessian))
+    compiledFuns$computeGradHess$run(postMode, burninFrac, gradient = TRUE, hessian = TRUE)
+    results <- c(results, list(hess=compiledFuns$computeGradHess$hess))
   }
   
   return(results)

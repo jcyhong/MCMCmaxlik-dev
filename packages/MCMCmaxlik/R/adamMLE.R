@@ -13,7 +13,6 @@
 #' samples is checked
 #' @param maxIter maximum number of iterations
 #' @param numMCMCSamples MCMC sample size for gradient approximation
-#' @param delta finite element differences
 #' @param burninFrac the fraction of burn-in samples for gradient approximation
 #' @param stepsize the step size
 #' @param eps epsilon
@@ -33,7 +32,6 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
                     boundary=NULL,
                     postMode = FALSE, trackEffSizeGrad = FALSE,
                     maxIter = 300, numMCMCSamples = 20, 
-                    delta = 1e-04, 
                     burninFrac = 0.5,
                     stepsize=0.3,
                     eps=1e-4, beta1=0.9, beta2=0.999,
@@ -70,8 +68,9 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
     
-    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
-    gradCurr <- compiledFuns$computeGrad$grad
+    compiledFuns$computeGradHess$run(postMode, burninFrac, gradient = TRUE, hessian = FALSE)
+    gradCurr <- compiledFuns$computeGradHess$grad
+    
     accumFirst <- beta1 * accumFirst + (1 - beta1) * (gradCurr)
     accumSecond <- beta2 * accumSecond + (1 - beta2) * (gradCurr^2)
     accumFirstAdj <- accumFirst / (1 - beta1^iter)
@@ -130,8 +129,8 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
           convergence.time <- proc.time() - ptm
           convergence.iter <- iter - 1
           converge <- T
+          if (!runUntilMaxIter) break
         }
-        if (!runUntilMaxIter) break
       }
     }
   }
@@ -158,7 +157,11 @@ adamMLE <- function(model, paramNodes, compiledFuns, paramInit,
   
   paramMatrix <- na.omit(paramMatrix)
   if (iter > 20) {
-    MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
+    if (converge) {
+      MLE <- apply(paramMatrix[(convergence.iter - 19):(convergence.iter), ], 2, mean, trim=.2)
+    } else {
+      MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
+    }
   } else {
     MLE <- tail(paramMatrix, 1)[1,]
   }

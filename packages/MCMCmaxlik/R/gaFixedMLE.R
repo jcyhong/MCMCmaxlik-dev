@@ -12,9 +12,8 @@
 #' @param trackEffSizeGrad a boolean indicating whether effective size of the MCMC
 #' samples is checked
 #' @param maxIter maximum number of iterations
-#' @param numMCMCSamples MCMC sample size for gradient approximation
-#' @param delta finite element differences
-#' @param burninFrac the fraction of burn-in samples for gradient approximation
+#' @param numMCMCSamples MCMC sample size for gradient computation
+#' @param burninFrac the fraction of burn-in samples for gradient computation
 #' @param stepsize the step size
 #' @param blockSize the size of blocks for convergence checking
 #' @param runsThreshold the cutoff for acceptable number of runs within a block
@@ -31,8 +30,7 @@ gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit,
                        postMode = FALSE, 
                        burninFrac = 0.5,
                        stepsize = 1, maxIter = 100, 
-                       numMCMCSamples = 300, 
-                       delta = 1e-04,
+                       numMCMCSamples = 300,
                        trackEffSizeGrad=FALSE,
                        skipConvCheck=FALSE,
                        runUntilMaxIter=TRUE,
@@ -68,8 +66,9 @@ gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit,
   while (iter <= maxIter) {
     compiledFuns$setParams$run(paramMatrix[iter, ])
     compiledFuns$MCMC$run(numMCMCSamples)
-    compiledFuns$computeGrad$run(delta, postMode, burninFrac)
-    gradCurr <- compiledFuns$computeGrad$grad
+    compiledFuns$computeGradHess$run(postMode, burninFrac, gradient = TRUE, hessian = FALSE)
+    gradCurr <- compiledFuns$computeGradHess$grad
+    print(gradCurr)
     eta <- stepsize
     thetaNew <- paramMatrix[iter, ] + eta * gradCurr
     # Check boundaries. (Projected)
@@ -124,8 +123,8 @@ gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit,
           convergence.time <- proc.time() - ptm
           convergence.iter <- iter - 1
           converge <- T
+          if (!runUntilMaxIter) break
         }
-        if (!runUntilMaxIter) break
       }
     }
   }
@@ -152,7 +151,11 @@ gaFixedMLE <- function(model, paramNodes, compiledFuns, paramInit,
   
   paramMatrix <- na.omit(paramMatrix)
   if (iter > 20) {
-    MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
+    if (converge) {
+      MLE <- apply(paramMatrix[(convergence.iter - 19):(convergence.iter), ], 2, mean, trim=.2)
+    } else {
+      MLE <- apply(tail(paramMatrix, 20), 2, mean, trim=.2)
+    }
   } else {
     MLE <- tail(paramMatrix, 1)[1,]
   }
