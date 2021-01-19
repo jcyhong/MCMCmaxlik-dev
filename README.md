@@ -7,9 +7,7 @@ This project provides efficient sampling-based methods for maximum likelihood es
 ### Prerequisites
 
 * [R](https://www.r-project.org/)
-* R packages: `devtools`, `nimble` with automatic differentiaion
-
-The folder nimbleAD is the package `nimble` with automatic differentiaion.
+* R packages: `devtools`, `nimble` with automatic differentiation (install the package from the branch [ADoak](https://github.com/nimble-dev/nimble/tree/ADoak))
 
 ### Installing
 
