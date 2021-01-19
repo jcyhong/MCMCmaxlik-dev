@@ -7,12 +7,13 @@ This project provides efficient sampling-based methods for maximum likelihood es
 ### Prerequisites
 
 * [R](https://www.r-project.org/)
-* R packages: `devtools`, `nimble`
+* R packages: `devtools`, `nimble` with automatic differentiaion
 
+The folder nimbleAD is the package `nimble` with automatic differentiaion.
 
 ### Installing
 
-First, set the working directory to the folder containing MCMCmaxlik. Then use `install()` in `devtools` to install the package.
+Set the working directory to the folder containing MCMCmaxlik. Then use `install()` in `devtools` to install the package.
 
 ```
 library("devtools")
@@ -29,7 +30,3 @@ install("MCMCmaxlik")
 * **Johnny Hong**  - [Website](https://jcyhong.github.io/)
 * **Sara Stoudt** - [Website](https://www.stat.berkeley.edu/~sstoudt/)
 * **Perry de Valpine**  - [Website](https://nature.berkeley.edu/~pdevalpine/)
-
-## Acknowledgments
-
-We thank Chris Paciorek for his numerous suggestions in the project, in particular the idea of warm start in the MCMC sampling. We thank Nick Michaud for NIMBLE's implementation of MCEM. The second author is supported by a  National Physical Sciences Consortium fellowship. 
