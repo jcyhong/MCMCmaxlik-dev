@@ -198,15 +198,35 @@ df_rmse_3000 <- df_combined_3000 %>% group_by(method) %>%
             RMSE_beta=sqrt(mean((beta - 1.262)^2)))
 
 # MCEM result ----
-pumpMCEM <- buildMCEM(model = pump, latentNodes = 'theta',
+pumpMCEM <- buildMCEM_AD(model = pump, latentNodes = 'theta',
                       boxConstraints = list( list( c('alpha', 'beta'),
                                                    limits = c(0, Inf) ) ))
 MCEM_time <- proc.time()
 out <- pumpMCEM$run()
 MCEM_time <- proc.time() - MCEM_time
 
-abs(0.825 - 0.823)
-abs(1.267 - 1.262)
+pumpMCEM_MLEs <- sapply(1:30, function(i) {
+  init <- c(runif(1, min=0.05, max=15), runif(1, min=0.05, max=15))
+  out <- pumpMCEM$run(thetaInit = init)
+  out
+})
+
+pumpMCEM_rmse <- apply(
+  apply(pumpMCEM_MLEs, 2, function(x) {(x - c(0.8232817, 1.2616447))^2}),
+  1,
+  function(y) {sqrt(mean(y))}
+)
+
+df_rmse_300 <- rbind(
+  df_rmse_300, 
+  data.frame(method='MCEM', RMSE_alpha=pumpMCEM_rmse[1], RMSE_beta=pumpMCEM_rmse[2])
+)
+
+
+df_rmse_3000 <- rbind(
+  df_rmse_3000, 
+  data.frame(method='MCEM', RMSE_alpha=pumpMCEM_rmse[1], RMSE_beta=pumpMCEM_rmse[2])
+  )
 
 write.csv(df_rmse_300, file='pump_rmse_300.csv', row.names=F)
 write.csv(df_rmse_3000, file='pump_rmse_3000.csv', row.names=F)

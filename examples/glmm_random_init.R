@@ -186,3 +186,118 @@ df_rmse <- df_combined_all %>% group_by(method) %>%
             RMSE_varM=sqrt(mean((varM - 1.041)^2)))
 
 write.csv(df_rmse, file='glmm_rmse.csv', row.names=F)
+
+
+# MCEM results ----
+
+library(nimble)
+require(glmm)
+library("MCMCmaxlik")
+nimbleOptions(experimentalEnableDerivs = TRUE)
+# Model specification -------------------------------------
+data(salamander)
+names(salamander)
+nrow(salamander) 
+#### organize data ####
+orgF=cbind.data.frame(Findex=1:length(unique(salamander$Female)),idF=unique(salamander$Female))
+
+orgM=cbind.data.frame(Mindex=1:length(unique(salamander$Male)),idM=unique(salamander$Male))
+
+salamander2=merge(salamander,orgF,by.x="Female",by.y="idF")
+salamander3=merge(salamander2,orgM,by.x="Male",by.y="idM")
+
+isRR=ifelse(salamander3$Cross=="R/R",1,0)
+#head(isRR)
+
+## indicator for type of pairing
+isRW=ifelse(salamander3$Cross=="R/W",1,0)
+#head(isRW)
+
+isWR=ifelse(salamander3$Cross=="W/R",1,0)
+#head(isWR,20)
+
+isWW=ifelse(salamander3$Cross=="W/W",1,0)
+
+
+#### nimble setup ####
+glmmCode <- nimbleCode({
+  for(i in 1:N){
+    logit(theta[i])<-beta1*isRR[i]+beta2*isRW[i]+beta3*isWR[i]+beta4*isWW[i]+REF[Findex[i]]+REM[Mindex[i]]
+    y[i]~dbin(theta[i],1)
+  }
+  for(i in 1:numFemales){
+    REF[i]~dnorm(0, sd=sqrt(varF))
+    
+  }
+  for(i in 1:numMales){
+    REM[i]~dnorm(0, sd=sqrt(varM))
+    
+    
+  }
+  
+  beta1 ~ dnorm(0, sd = 10000)
+  beta2 ~ dnorm(0, sd = 10000)
+  beta3 ~ dnorm(0, sd = 10000)
+  beta4 ~ dnorm(0, sd = 10000)
+  varF ~ dunif(0, 1000)
+  varM ~ dunif(0, 1000)
+  
+})
+
+glmmConstants <- list(N = nrow(salamander3),numFemales=length(unique(salamander3$Female)),numMales=length(unique(salamander3$Male)),Findex=salamander3$Findex,Mindex=salamander3$Mindex)
+
+glmmData <- list(
+  isRR=isRR,isWR=isWR,isRW=isRW,isWW=isWW,y=salamander3$Mate
+)
+
+glmmInits <- list(beta1 = 1, beta2 = 1, beta3=1,beta4=1,varF=5,varM=5)
+
+glmmMod <- nimbleModel(code=glmmCode, constants=glmmConstants, data=glmmData, inits=glmmInits, check = FALSE)
+
+glmmParamNodes <- glmmMod$getNodeNames(topOnly = T,stochOnly=T)
+
+Cglmm <- compileNimble(glmmMod)
+
+compiledFunsGlmm <- buildMCMCmaxlik(glmmMod, glmmParamNodes)
+
+boundary <- list(c(-40, 40), c(-40, 40), c(-40, 40),
+                 c(-40, 40), c(0.01, 100), c(0.01, 100))
+
+latentNodes <- glmmMod$getNodeNames(latentOnly=TRUE, stochOnly=TRUE)
+
+glmmMCEM <- buildMCEM_AD(model=glmmMod,
+                         latentNodes=latentNodes,
+                         C = 0.01)
+
+glmmMCEM_time <- proc.time()
+out <- glmmMCEM$run(thetaInit = init)
+glmmMCEM_time <- proc.time() - glmmMCEM_time
+
+glmmMCEM_MLEs <- matrix(nrow=6, ncol=30)
+
+for (i in 1:30) {
+  tryCatch({
+    print(i)
+    init <- c(runif(1, min=-10, max=10), 
+              runif(1, min=-10, max=10),
+              runif(1, min=-10, max=10), 
+              runif(1, min=-10, max=10),
+              runif(1, min=0.05, max=15),
+              runif(1, min=0.05, max=15))
+    glmmMCEM_MLEs[, i] <- glmmMCEM$run(thetaInit = init)
+  }, error=function(e){})
+}
+
+glmmMCEM_rmse <- apply(
+  apply(glmmMCEM_MLEs, 2, function(x) {
+    (x - c(1.008, 0.306, -1.896, 0.990, 1.174, 1.041))^2
+    }),
+  1,
+  function(y) {sqrt(mean(y))}
+)
+
+glmmMCEM_rmse_df <- data.frame(method="MCEM", t(glmmMCEM_rmse))
+colnames(glmmMCEM_rmse_df) <- 
+  c('method', paste0('RMSE_', glmmParamNodes))
+df_rmse <- rbind(df_rmse, glmmMCEM_rmse_df)
+write.csv(df_rmse, file='glmm_rmse.csv', row.names=F)

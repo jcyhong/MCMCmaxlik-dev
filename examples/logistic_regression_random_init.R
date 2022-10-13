@@ -164,13 +164,42 @@ write.csv(df_rmse_20, file='logistic_regression_rmse_20.csv', row.names=F)
 write.csv(df_rmse_300, file='logistic_regression_rmse_300.csv', row.names=F)
 
 
-LogregMCEM <- buildMCEM(model=logreg, 
-                        latentNodes = 'beta2',
-                        boxConstraints = list( 
-                          list(c('sigma_RE'), 
-                               limits = c(0, 1000) ) ))
+LogregMCEM <- buildMCEM_AD(model=logreg, 
+                          latentNodes = 'beta2',
+                          C = 0.01,
+                          boxConstraints = list( 
+                            list(c('sigma_RE'), 
+                                 limits = c(0, 1000) ) ))
 LogregMCEM_time <- proc.time()
 out <- LogregMCEM$run()
 LogregMCEM_time <- proc.time() - LogregMCEM_time
 
+LogregMCEM_MLEs <- matrix(nrow=3, ncol=30)
 
+for (i in 1:30) {
+  init <- c(runif(1, min=-10, max=10), 
+            runif(1, min=-10, max=10),
+            runif(1, min=0.05, max=15))
+  LogregMCEM_MLEs[, i] <- LogregMCEM$run(thetaInit = init)
+}
+
+LogregMCEM_rmse <- apply(
+  apply(LogregMCEM_MLEs, 2, function(x) {(x - c(-0.519, 1.019, 0.307))^2}),
+  1,
+  function(y) {sqrt(mean(y))}
+)
+
+df_rmse_20 <- rbind(
+  df_rmse_20, 
+  data.frame(method='MCEM', RMSE_beta0=LogregMCEM_rmse[1], RMSE_beta1=LogregMCEM_rmse[2],
+             RMSE_sigma_RE=LogregMCEM_rmse[3])
+)
+
+df_rmse_300 <- rbind(
+  df_rmse_300, 
+  data.frame(method='MCEM', RMSE_beta0=LogregMCEM_rmse[1], RMSE_beta1=LogregMCEM_rmse[2],
+             RMSE_sigma_RE=LogregMCEM_rmse[3])
+)
+
+write.csv(df_rmse_20, file='logistic_regression_rmse_20.csv', row.names=F)
+write.csv(df_rmse_300, file='logistic_regression_rmse_300.csv', row.names=F)
