@@ -242,11 +242,15 @@ buildMCEM_AD <- function(model,
 #  cvarCalc <- compileNimble(RvarCalc, project = Rmodel)
   cCalc_E_llk = compileNimble(Rcalc_E_llk, project = Rmodel)  
   nParams = length(maxNodes)
-  run <- function(initM = 1000){
+  run <- function(initM = 1000, thetaInit = NULL){
     if(burnIn >= initM)
       stop('mcem quitting: burnIn > initial m value')
     cmcmc_Latent$run(1, reset = TRUE)	# To get valid initial values 
-    theta <- values(cModel, maxNodes)
+    if (is.null(thetaInit)) {
+      theta <- values(cModel, maxNodes)
+    } else {
+      theta <- thetaInit
+    }
     if(optimMethod == "L-BFGS-B"){
       for(i in seq_along(maxNodes) ) {  # check that initial values satisfy constraints
         if(identical(low_limits[i], -Inf) && (hi_limits[i] < Inf)){
@@ -293,7 +297,7 @@ buildMCEM_AD <- function(model,
         theta = optimOutput$par
         sample_logLiks_prev <- cCalc_E_llk$sample_logLiks(thetaPrev)
         sample_logLiks_new <- cCalc_E_llk$sample_logLiks(theta)
-        mcse_result <- mcse(sample_logLiks_new - sample_logLiks_prev,
+        mcse_result <- mcmcse::mcse(sample_logLiks_new - sample_logLiks_prev,
                             size = ceiling(min(1000, (m - burnIn)/20)), ## backward compatible
                             method = "obm",
                             r = 1) ## What is the lugsail?
