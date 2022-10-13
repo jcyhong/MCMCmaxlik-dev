@@ -22,9 +22,10 @@ install("MCMCmaxlik")
 
 * [R](https://www.r-project.org/) - the software environment
 * [nimble](https://r-nimble.org/) - NIMBLE (NIMBLE: Numerical Inference for Hierarchical Models Using Bayesian and Likelihood Estimation)
+* Requires ADoak branch of NIMBLE
 
 ## Authors
 
 * **Johnny Hong**  - [Website](https://jcyhong.github.io/)
-* **Sara Stoudt** - [Website](https://www.stat.berkeley.edu/~sstoudt/)
+* **Sara Stoudt** - [Website](https://sastoudt.github.io/)
 * **Perry de Valpine**  - [Website](https://nature.berkeley.edu/~pdevalpine/)
