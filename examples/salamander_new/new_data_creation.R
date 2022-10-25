@@ -56,5 +56,5 @@ names(bottom) <- names(top)
 
 big_data2 <- rbind.data.frame(top, bottom)
 
-write.csv(big_data, "n1440.csv", row.names = F)
+write.csv(big_data2, "n1440.csv", row.names = F)
 
