@@ -14,7 +14,7 @@ library(dplyr)
 nimbleOptions(experimentalEnableDerivs = TRUE)
 
 # Model specification -------------------------------------
-salamander3 = read.csv('salamander_new/n1440.csv')
+salamander3 = read.csv('salamander_new/first30F_n180.csv.csv')
 N = nrow(salamander3) 
 
 isRR=ifelse(salamander3$Cross=="R/R",1,0)
@@ -260,3 +260,86 @@ dev.off()
 pdf(paste0("glmm_N_", N, "_times.pdf"), width = 7)
 timesPlot
 dev.off()
+
+
+# Combining the exec time results ----
+timesCombined <- rbind(
+  cbind(read.csv("salamander_results/times_n180.csv"), ScientificSampleSize=180),
+  cbind(read.csv("salamander_results/times_n360.csv"), ScientificSampleSize=360),
+  cbind(read.csv("salamander_results/times_n720.csv"), ScientificSampleSize=720),
+  cbind(read.csv("salamander_results/times_n1440.csv"), ScientificSampleSize=1440)
+)
+
+facetLabelAppender <- function(string, prefix = "N_mcmc = ") paste0(prefix, string)
+
+plotTime1 <- ggplot(timesCombined, 
+       aes(x=ScientificSampleSize, y=exec.time, col=method, lty=method)
+       ) + 
+  geom_line(size=1.1) +
+  xlab("MCMC sample size (N_mcmc)") +
+  ylab('execution time (seconds)') +
+  facet_grid(~MCMCSampleSize, labeller=as_labeller(facetLabelAppender))
+
+plotTime2 <- ggplot(timesCombined, 
+       aes(x=MCMCSampleSize, y=exec.time, col=method, lty=method)
+) + 
+  geom_line(size=1.1) +
+  xlab("scientific sample size (N_obs)") +
+  ylab('execution time (seconds)') +
+  facet_grid(~ScientificSampleSize, 
+             labeller=as_labeller(function(x) facetLabelAppender(x, 'N_obs = ')))
+
+pdf(paste0("glmm_combined_times.pdf"), width = 7)
+grid.arrange(
+  plotTime1, plotTime2, nrow=2,
+  top="Execution time for varying MCMC sample sizes (N_mcmc) and scientific sample sizes (N_obs)"
+)
+dev.off()
+
+
+# Combining the trajectory results ----
+trajectoryCombined <- rbind(
+  cbind(read.csv("salamander_results/results_n180.csv"), ScientificSampleSize=180),
+  cbind(read.csv("salamander_results/results_n360.csv"), ScientificSampleSize=360),
+  cbind(read.csv("salamander_results/results_n720.csv"), ScientificSampleSize=720),
+  cbind(read.csv("salamander_results/results_n1440.csv"), ScientificSampleSize=1440)
+)
+
+trajectoryPlot <- function(N) {
+  ggplot(
+    trajectoryCombined %>% 
+      filter(ScientificSampleSize == N) %>% 
+      mutate(
+        MCMCSampleSize=factor(MCMCSampleSize, levels=numMCMCSamplesGrid),
+        method=factor(method, levels=methodNames)
+      ), 
+    aes(x=iteration, y=estimate, col=MCMCSampleSize, lty=MCMCSampleSize)) +
+    facet_grid(parameter~method, scales="free_y") +
+    geom_line() +
+    ggtitle(paste0('N_obs = ', N)) +
+    theme(legend.position = "top") +
+    theme(
+      strip.text.x = element_text(size = 14),
+      strip.text.y = element_text(size = 14),
+      axis.title.x = element_text(size = 20),
+      axis.text.x = element_text(size = 14),
+      axis.text.y = element_text(size = 14),
+      axis.title.y = element_text(size = 20),
+      legend.title=element_text(size=20),
+      legend.text=element_text(size=20),
+      plot.title = element_text(size = 30)
+    ) +
+    labs(color='MCMC sample size', lty='MCMC sample size') 
+}
+
+t180 <- trajectoryPlot(N = 180)
+t360 <- trajectoryPlot(N = 360)
+t720 <- trajectoryPlot(N = 720)
+t1440 <- trajectoryPlot(N = 1440)
+
+pdf("glmm_combined_trajectories.pdf", width=20, height=20)
+grid.arrange(t180, t360, t720, t1440, nrow=2, 
+  top=textGrob("Estimate trajectories", gp=gpar(fontsize=35,font=8)))
+dev.off()
+
+

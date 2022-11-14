@@ -22,6 +22,10 @@ setwd("~/Desktop/MCMCmaxlik-dev/examples/salamander_new")
 write.csv(filterF, "first30F_n180.csv", row.names = F)
 write.csv(filterM, "first30M_n180.csv", row.names = F)
 
+# select first three rows for each male
+filter3 <- salamander3 %>% group_by(Mindex) %>% slice(1:3)
+write.csv(filter3, "n180.csv", row.names = F)
+
 #### n = 720 ####
 
 newF <- cbind.data.frame(Findex_og = unique(salamander3$Findex), Findex_new = 61:120)

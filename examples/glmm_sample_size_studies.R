@@ -1,4 +1,4 @@
-# Simulation studies for different MCMC sample sizes and scientific sample sizes.
+# Simulation studies for different MCMC sample sizes.
 # Model: salamander (glmm with cross random effects)
 
 # Fix the seed for reproducibility.
@@ -19,7 +19,7 @@ nimbleOptions(experimentalEnableDerivs = TRUE)
 # Model specification -------------------------------------
 data(salamander)
 names(salamander)
-nrow(salamander) 
+N = nrow(salamander) 
 #### organize data ####
 orgF=cbind.data.frame(Findex=1:length(unique(salamander$Female)),idF=unique(salamander$Female))
 
@@ -73,7 +73,13 @@ glmmCode <- nimbleCode({
   
 })
 
-glmmConstants <- list(N = nrow(salamander3),numFemales=length(unique(salamander3$Female)),numMales=length(unique(salamander3$Male)),Findex=salamander3$Findex,Mindex=salamander3$Mindex)
+glmmConstants <- list(
+  N = nrow(salamander3),
+  numFemales=length(unique(salamander3$Female)),
+  numMales=length(unique(salamander3$Male)),
+  Findex=salamander3$Findex,
+  Mindex=salamander3$Mindex
+)
 
 glmmData <- list(
   isRR=isRR,isWR=isWR,isRW=isRW,isWW=isWW,y=salamander3$Mate
@@ -183,6 +189,15 @@ for (i in 1:length(numMCMCSamplesGrid)) {
 
 timesGLMMList <- lapply(resultsGLMMList, getGLMMSummary)
 
+flattenTimesList <- function(timesList, methodNames, numMCMCSamples) {
+  do.call(rbind, lapply(1:length(timesList), function(i) {
+    data.frame(
+      method=factor(methodNames, levels=methodNames), 
+      MCMCSampleSize=numMCMCSamples[i], 
+      exec.time=timesList[[i]][, 'exec.time']
+    )
+  }))
+}
 
 flattenParam <- function(paramMatrix, paramNames) {
   numRows <- nrow(paramMatrix)
@@ -215,6 +230,10 @@ resultsGLMMListFlattened <- flattenResultList(
   resultsGLMMList, paramNames=glmmParamNodes, 
   methodNames=methodNames, numMCMCSamples=numMCMCSamplesGrid
 )
+resultsGLMMTimesFlattened <- flattenTimesList(
+  timesGLMMList, 
+  methodNames=methodNames,
+  numMCMCSamples=numMCMCSamplesGrid)
 
 resultPlot <- ggplot(
   resultsGLMMListFlattened %>% 
@@ -224,7 +243,7 @@ resultPlot <- ggplot(
   aes(x=iteration, y=estimate, col=MCMCSampleSize, lty=MCMCSampleSize)) +
   facet_grid(parameter~method, scales="free_y") +
   geom_line() +
-  ggtitle('N = 360') +
+  ggtitle(paste0('N = ', N)) +
   theme(legend.position = "top") +
   theme(
     strip.text.x = element_text(size = 15),
@@ -234,8 +253,25 @@ resultPlot <- ggplot(
     axis.text.y = element_text(size = 12),
     axis.title.y = element_text(size = 15),
     legend.text=element_text(size=13)
-  )
+  ) +
+  labs(color='MCMC sample size', lty='MCMC sample size') 
 
-pdf(paste0("glmm_N_", 360 , ".pdf"), width = 12)
+timesPlot <- ggplot(
+  resultsGLMMTimesFlattened,
+  aes(x=MCMCSampleSize, y=exec.time, col=method, lty=method)) +
+  geom_line(size=1.2) +
+  ggtitle(paste0('N = ', N)) +
+  xlab('MCMC sample size') +
+  ylab('execution time (seconds)')
+timesPlot
+
+write.csv(resultsGLMMListFlattened, paste0("salamander_results/results_n", N, ".csv"), row.names = F)
+write.csv(resultsGLMMTimesFlattened, paste0("salamander_results/times_n", N, ".csv"), row.names = F)
+
+pdf(paste0("glmm_N_", N, ".pdf"), width = 12)
 resultPlot
+dev.off()
+
+pdf(paste0("glmm_N_", N, "_times.pdf"), width = 7)
+timesPlot
 dev.off()
