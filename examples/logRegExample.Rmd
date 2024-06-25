@@ -1,0 +1,177 @@
+---
+title: 'Example: logistic regression'
+author: "Sara Stoudt"
+date: "April 8, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Logistic Regression example
+
+Now we will explore a more realistic scenario and show how to change some of the default parameters. 
+
+```{r,messages=F,results="hide"}
+library("MCMCmaxlik")
+```
+
+NIMBLE uses the BUGS language to specify a hierarchical model.
+
+```{r model}
+logRegCode <- nimbleCode({
+  beta0 ~ dnorm(0, sd=10000)
+  beta1 ~ dnorm(0, sd=10000)
+  sigma_RE ~ dunif(0, 1000)
+  for(i in 1:N) {
+    beta2[i] ~ dnorm(0, sd=sigma_RE)
+    logit(p[i]) <- beta0 + beta1 * x[i] + beta2[i]
+    r[i] ~ dbin(p[i], n[i])
+  }
+})
+
+logRegConstants <- list(N=10)
+
+logRegData <- list(
+  r=c(10, 23, 23, 26, 17, 5, 53, 55, 32, 46),
+  n=c(39, 62, 81, 51, 39, 6, 74, 72, 51, 79),
+  x=c(0,  0,  0,  0,  0,  1, 1,  1,  1,  1)
+)
+
+logRegInits <- list(beta0=0, beta1=0, sigma_RE=1)
+
+logreg <- nimbleModel(code=logRegCode, constants=logRegConstants, 
+                      data=logRegData, inits=logRegInits, check=FALSE)
+
+paramNodesLogreg <- logreg$getNodeNames(topOnly=T)
+Clogreg <- compileNimble(logreg)
+```
+
+
+## Running the algorithms
+
+First, we compile the algorithms in NIMBLE using `buildMCMCmaxlik()`.
+
+```{r compile}
+compiledFunsLogReg <- buildMCMCmaxlik(logreg, paramNodesLogreg)
+```
+
+Then we can run the algorithms using `computeMLE()`.
+
+First we can try different step sizes for the fixed step size approach. 
+
+```{r algL, results="hide" }
+resultsLogRegfixedL <- computeMLE(model=logreg, 
+                                    paramNodes = paramNodesLogreg, 
+                                    paramInit=c(0, 0, 1),
+                                    compiledFuns=compiledFunsLogReg,
+                                    stepsize=.05,
+                                    method="fixed")
+names(resultsLogRegfixedL)
+
+```
+
+
+Because we use a smaller step size, we would expect to need more iterations to converge, so we change the default version of maxIter from 100 to 500.
+
+```{r algS, results="hide" }
+resultsLogRegfixedS <- computeMLE(model=logreg, 
+                                    paramNodes = paramNodesLogreg, 
+                                    paramInit=c(0, 0, 1),
+                                    compiledFuns=compiledFunsLogReg,
+                                    stepsize=.005,maxIter=500,
+                                    method="fixed")
+
+
+```
+
+Here we see that the smaller fixed step size is more appropriate for this example (see the results of the 1D sampling approach for comparison).
+
+```{r fixedResult}
+resultsLogRegfixedL$MLE
+resultsLogRegfixedS$MLE
+
+resultsLogRegfixedL$iter
+resultsLogRegfixedS$iter
+```
+
+
+Now we can compare the default settings for the number of MCMC samples for both the gradient estimation and the 1D sampling step (numMCMCSamples=300, numMCMCSamples1D=300) with other choices of sample size for the 1D sampling method.
+
+```{r algorithm, results="hide"}
+resultsLogReg1Dsampling <- computeMLE(model=logreg, 
+                                    paramNodes = paramNodesLogreg, 
+                                    paramInit=c(0, 0, 1),
+                                    compiledFuns=compiledFunsLogReg,
+                                    method="ga1D")
+
+
+```
+
+
+```{r 1DsampFig}
+par(mfrow=c(3,1))
+plot(resultsLogReg1Dsampling$param[,1],type="l",xlab="iter",ylab="beta0")
+abline(h=resultsLogReg1Dsampling$MLE[1],col="red")
+plot(resultsLogReg1Dsampling$param[,2],type="l",xlab="iter",ylab="beta1")
+abline(h=resultsLogReg1Dsampling$MLE[2],col="red")
+plot(resultsLogReg1Dsampling$param[,3],type="l",xlab="iter",ylab="sigma_RE")
+abline(h=resultsLogReg1Dsampling$MLE[3],col="red")
+
+```
+
+Now let's see what happens when we decrease the number of MCMC samples in the gradient estimation step.
+
+```{r algorithm2, results="hide"}
+resultsLogReg1DsamplingSL <- computeMLE(model=logreg, 
+                                    paramNodes = paramNodesLogreg, 
+                                    paramInit=c(0, 0, 1),
+                                    compiledFuns=compiledFunsLogReg,
+                                    numMCMCSamples=100, numMCMCSamples1D=300,
+                                    method="ga1D")
+
+```
+
+```{r 1DsampFig2}
+par(mfrow=c(3,1))
+plot(resultsLogReg1DsamplingSL$param[,1],type="l",xlab="iter",ylab="beta0")
+abline(h=resultsLogReg1DsamplingSL$MLE[1],col="red")
+plot(resultsLogReg1DsamplingSL$param[,2],type="l",xlab="iter",ylab="beta1")
+abline(h=resultsLogReg1DsamplingSL$MLE[2],col="red")
+plot(resultsLogReg1DsamplingSL$param[,3],type="l",xlab="iter",ylab="sigma_RE")
+abline(h=resultsLogReg1DsamplingSL$MLE[3],col="red")
+
+```
+
+Alternatively, let's see what happens when we decrease the number of MCMC samples in the 1D sampling step. We would expect this to do worse than above.
+
+```{r algorithm3, results="hide"}
+resultsLogReg1DsamplingLS <- computeMLE(model=logreg, 
+                                    paramNodes = paramNodesLogreg, 
+                                    paramInit=c(0, 0, 1),
+                                    compiledFuns=compiledFunsLogReg,
+                                    numMCMCSamples=300, numMCMCSamples1D=100,
+                                    method="ga1D")
+
+
+```
+
+```{r 1DsampFig3}
+par(mfrow=c(3,1))
+plot(resultsLogReg1DsamplingLS$param[,1],type="l",xlab="iter",ylab="beta0")
+abline(h=resultsLogReg1DsamplingLS$MLE[1],col="red")
+plot(resultsLogReg1DsamplingLS$param[,2],type="l",xlab="iter",ylab="beta1")
+abline(h=resultsLogReg1DsamplingLS$MLE[2],col="red")
+plot(resultsLogReg1DsamplingLS$param[,3],type="l",xlab="iter",ylab="sigma_RE")
+abline(h=resultsLogReg1DsamplingLS$MLE[3],col="red")
+
+```
+
+```{r 1DResult}
+resultsLogReg1Dsampling$MLE
+resultsLogReg1DsamplingSL$MLE
+resultsLogReg1DsamplingLS$MLE
+```
+
+Here we see that the results remain fairly robust to decreases in both the number of MCMC samples for the gradient calculation and for the 1D sampling.
