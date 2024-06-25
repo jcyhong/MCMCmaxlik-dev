@@ -1,4 +1,4 @@
-# Sampling-based Maximum Likelihood Estimation for Latent Variable Models
+# Fast maximum likelihood estimation for general hierarchical models
 
 This project provides efficient sampling-based methods for maximum likelihood estimation in the context of latent variable modeling. The key algorithms revolve around stochastic gradient methods.
 
