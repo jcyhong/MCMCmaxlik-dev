@@ -1,6 +1,6 @@
 # Fast maximum likelihood estimation for general hierarchical models
 
-This project provides efficient sampling-based methods for maximum likelihood estimation in the context of latent variable modeling. The key algorithms revolve around stochastic gradient methods.
+This project provides efficient sampling-based methods for maximum likelihood estimation in the context of general hierarchical models. The key algorithms revolve around stochastic gradient methods.
 
 ## Getting Started
 
