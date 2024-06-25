@@ -153,6 +153,25 @@ round((gmreDevfun(resultsLogregGlmer[c('sigma_RE', 'beta0', 'beta1')]) -
          gmreDevfun(resultsLogregMCEM_MLE[c(3, 1, 2)])) / -2, 5)
 
 
+LogregMCEM <- buildMCEM_AD(model=logreg,
+                        latentNodes = 'beta2',
+                        boxConstraints = list(
+                          list(c('sigma_RE'),
+                               limits = c(0, 1000) ) ))
+LogregMCEM_time <- proc.time()
+out <- LogregMCEM$run(thetaInit=c(0, 0, 1))
+LogregMCEM_time <- proc.time() - LogregMCEM_time
+LogregMCEM_time
+round((gmreDevfun(resultsLogregGlmer[c('sigma_RE', 'beta0', 'beta1')]) - 
+         gmreDevfun(out[c(3, 1, 2)])) / -2, 5)
+
+LogregMCEM_time <- proc.time()
+out <- LogregMCEM$run(thetaInit=c(-1, -1, 4))
+LogregMCEM_time <- proc.time() - LogregMCEM_time
+LogregMCEM_time
+round((gmreDevfun(resultsLogregGlmer[c('sigma_RE', 'beta0', 'beta1')]) - 
+         gmreDevfun(out[c(3, 1, 2)])) / -2, 5)
+
 # LogregMCEM <- buildMCEM(model=logreg, 
 #                         latentNodes = 'beta2',
 #                         boxConstraints = list( 

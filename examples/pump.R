@@ -255,3 +255,25 @@ dev.off()
 
 #title(paste0("pump log marginal likelihood\nMCMC samples: ", numMCMCSamples),
 #     cex.main=2)
+
+
+
+# MCEM results --------
+
+# Set initial values to (10, 10).
+pumpMCEM <- buildMCEM_AD(
+  model = pump, latentNodes = 'theta',  
+  boxConstraints = list( list( c('alpha', 'beta'), limits = c(0, Inf) ) ))
+
+thetaInit <- c(10, 10)
+ptm <- proc.time()
+mle <- pumpMCEM$run(thetaInit=thetaInit)
+proc.time() - ptm
+round(fr2(mle[1], mle[2]) - fr2(0.823, 1.262), 5)
+
+thetaInit <- c(10, 2)
+ptm <- proc.time()
+mle <- pumpMCEM$run(thetaInit=thetaInit)
+proc.time() - ptm
+round(fr2(mle[1], mle[2]) - fr2(0.823, 1.262), 5)
+

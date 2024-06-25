@@ -218,7 +218,14 @@ write.csv(rbind(cbind(timesGLMM_2_300, init=2),
                 cbind(timesGLMM_4_300, init=4)), 'times_glmm2.csv')
 
 # MCEM
-resultsGLMMMCEM_MLE <- c(1.0168445, 0.3181842, -1.9470261, 0.9946614, 1.3877689, 1.2448641)
+latentNodes <- glmmMod$getNodeNames(latentOnly=TRUE, stochOnly=TRUE)
+glmmMCEM <- buildMCEM_AD(model=glmmMod,
+                         latentNodes=latentNodes,
+                         C = 0.01)
+
+glmmMCEM_time <- proc.time()
+resultsGLMMMCEM_MLE <- glmmMCEM$run(thetaInit = rep(2, 6))
+glmmMCEM_time <- proc.time() - glmmMCEM_time
 
 benchmarkMLE <- resultsGLMMGlmer
 names(benchmarkMLE) <- c('beta1', 'beta2', 'beta3', 'beta4', 'varF', 'varM')
@@ -231,7 +238,14 @@ resultsGLMMMCEM_MLE[1:2] <- sqrt(resultsGLMMMCEM_MLE[1:2])
 
 round((gmreDevfunGLMM(benchmarkMLE) - gmreDevfunGLMM(resultsGLMMMCEM_MLE)) / -2, 5)
 
+glmmMCEM_time <- proc.time()
+resultsGLMMMCEM_MLE <- glmmMCEM$run(thetaInit = rep(4, 6))
+glmmMCEM_time <- proc.time() - glmmMCEM_time
+names(resultsGLMMMCEM_MLE) <- c('beta1', 'beta2', 'beta3', 'beta4', 'varF', 'varM')
+resultsGLMMMCEM_MLE <- resultsGLMMMCEM_MLE[c('varF', 'varM', 'beta1', 'beta2', 'beta3', 'beta4')]
+resultsGLMMMCEM_MLE[1:2] <- sqrt(resultsGLMMMCEM_MLE[1:2])
 
+round((gmreDevfunGLMM(benchmarkMLE) - gmreDevfunGLMM(resultsGLMMMCEM_MLE)) / -2, 5)
 
 ptm <- proc.time()
 sal <- glmm(Mate ~ 0 + Cross, random=list(~ 0 + Female,
